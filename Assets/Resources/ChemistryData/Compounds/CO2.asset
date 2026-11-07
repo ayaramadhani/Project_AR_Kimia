@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d591c011e6487504fafffe9a3e1382e9, type: 3}
+  m_Name: CO2
+  m_EditorClassIdentifier: Assembly-CSharp::ARKimia.Data.CompoundSO
+  compoundId: comp_co2
+  compoundName: Karbon Dioksida
+  chemicalFormula: CO2
+  ingredients:
+  - element: {fileID: 11400000, guid: aa93b77820d5642438a13a6e7fc40e83, type: 2}
+    quantity: 1
+  - element: {fileID: 11400000, guid: 7cf2683f856616c45a106f2cd0f2850b, type: 2}
+    quantity: 2
+  moleculeModelPrefab: {fileID: 0}
+  icon: {fileID: 0}
+  description: Gas rumah kaca yang penting dalam siklus karbon Bumi dan proses fotosintesis
+    tumbuhan.
+  applications: Fotosintesis, pembuatan minuman berkarbonasi, dry ice pendingin,
+    dan alat pemadam api.

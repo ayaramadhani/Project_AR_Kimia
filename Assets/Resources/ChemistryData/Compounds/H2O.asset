@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d591c011e6487504fafffe9a3e1382e9, type: 3}
+  m_Name: H2O
+  m_EditorClassIdentifier: Assembly-CSharp::ARKimia.Data.CompoundSO
+  compoundId: comp_h2o
+  compoundName: Air
+  chemicalFormula: H2O
+  ingredients:
+  - element: {fileID: 11400000, guid: 415c4befdbbc3534b9b13545f60d3873, type: 2}
+    quantity: 2
+  - element: {fileID: 11400000, guid: 7cf2683f856616c45a106f2cd0f2850b, type: 2}
+    quantity: 1
+  moleculeModelPrefab: {fileID: 0}
+  icon: {fileID: 0}
+  description: Senyawa anorganik transparan, tidak berbau, dan tidak berasa yang
+    merupakan cairan esensial bagi kehidupan.
+  applications: Pelarut universal, hidrasi biologis, pendingin industri, dan habitat
+    kehidupan akuatik.
