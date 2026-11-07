@@ -29,3 +29,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 252888492650f2e40a6322e0e32f1456, type: 2}
   - {fileID: 11400000, guid: c71656dc42bcf2b4b93c699d85c970ea, type: 2}
   - {fileID: 11400000, guid: 5b56a33ac93e4684cb6decd710d5244f, type: 2}
+  placeholderAtomMaterial: {fileID: 2100000, guid: f6cbc0045eca2544699d92af8a9e9bf6, type: 2}
+  logoUnsurFont: {fileID: 12800000, guid: 6956749f23e578346896d24e700e93be, type: 3}
+  titleFont: {fileID: 12800000, guid: 8e8bdeb38aa555c44800859f45733b32, type: 3}
+  textFont: {fileID: 12800000, guid: 3266506edf88a8e4f98e3db8fc2fd8e8, type: 3}
