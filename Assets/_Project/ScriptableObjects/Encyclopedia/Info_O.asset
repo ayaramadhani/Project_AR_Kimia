@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_O
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: O
+  category: UNSUR
+  subtitle: Nomor atom 8 | Massa atom 15,999 | Gas
+  description: Oksigen adalah gas yang dibutuhkan makhluk hidup untuk bernapas dan
+    menyusun sekitar 21% udara. Oksigen juga unsur paling melimpah di kerak Bumi,
+    terutama sebagai bagian dari batuan dan air.
+  funFact: Lapisan ozon (O<sub>3</sub>) di atmosfer melindungi kita dari sinar ultraviolet
+    Matahari.
