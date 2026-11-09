@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_N
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: N
+  category: UNSUR
+  subtitle: Nomor atom 7 | Massa atom 14,007 | Gas
+  description: Nitrogen menyusun sekitar 78% udara yang kita hirup. Gas N<sub>2</sub>
+    sangat stabil dan sulit bereaksi, tetapi nitrogen juga menjadi penyusun penting
+    protein, DNA, dan pupuk.
+  funFact: Nitrogen cair bersuhu sekitar minus 196 derajat Celsius dan dipakai untuk
+    membekukan makanan serta menyimpan sampel biologis.
