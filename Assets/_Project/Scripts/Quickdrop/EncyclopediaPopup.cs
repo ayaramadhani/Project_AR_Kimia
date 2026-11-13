@@ -91,6 +91,7 @@ public class EncyclopediaPopup : MonoBehaviour, IPointerClickHandler
     {
         if (e == null) return;
         var entry = Find(e.symbol);
+        if (entry == null) Debug.LogWarning("Ensiklopedia: entri '" + e.symbol + "' belum ada. Jalankan Chemistry > Sinkronkan Data Quickdrop.");
         ApplyAccent(false);
         categoryText.text = "UNSUR";
         symbolText.text = e.symbol;

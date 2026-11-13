@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Linq;
 
 public class ElementSidebarUI : MonoBehaviour
 {
@@ -81,19 +82,19 @@ public class ElementSidebarUI : MonoBehaviour
         int count = 0;
 
         if (current == Tab.Unsur)
+{
+    foreach (var e in db.elements.Where(x => x != null).OrderBy(x => x.atomicNumber))
+    {
+        if (!Match(f, e.displayName, e.symbol)) continue;
+        Instantiate(itemPrefab, listParent).Setup(e);
+        count++;
+    }
+}
+        else if (current == Tab.Senyawa)
         {
-            foreach (var e in db.elements)
+            foreach (var c in db.compounds.Where(x => x != null).OrderBy(x => x.name))
             {
-                if (e == null || !Match(f, e.displayName, e.symbol)) continue;
-                Instantiate(itemPrefab, listParent).Setup(e);
-                count++;
-            }
-        }
-        else
-        {
-            foreach (var c in db.compounds)
-            {
-                if (c == null || !Match(f, c.displayName, c.formula)) continue;
+                if (!Match(f, c.name, c.formula)) continue;
                 Instantiate(itemPrefab, listParent).Setup(c);
                 count++;
             }
