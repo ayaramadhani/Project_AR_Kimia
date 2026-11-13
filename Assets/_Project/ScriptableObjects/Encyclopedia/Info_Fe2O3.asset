@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_Fe2O3
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: Fe2O3
+  category: SENYAWA
+  subtitle: Rumus Fe2O3 | Besi(III) oksida (Karat Besi)
+  description: Karat besi atau besi(III) oksida terbentuk ketika logam besi bereaksi
+    dengan oksigen di udara dan kelembapan air. Senyawa padat berwarna cokelat kemerahan
+    ini juga ditemukan di alam sebagai mineral hematit.
+  funFact: Permukaan planet Mars berwarna merah karena tanahnya kaya akan debu besi(III)
+    oksida (karat besi).

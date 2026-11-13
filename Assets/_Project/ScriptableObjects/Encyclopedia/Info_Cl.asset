@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_Cl
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: Cl
+  category: UNSUR
+  subtitle: Nomor atom 17 | Massa atom 35,45 | Gas (kuning kehijauan)
+  description: Klorin berupa gas kuning kehijauan berbau menyengat dan beracun dalam
+    bentuk murni. Klorin sangat reaktif dan mudah berikatan dengan unsur lain, misalnya
+    dengan natrium membentuk garam dapur.
+  funFact: Klorin dalam kadar sangat kecil dipakai untuk membunuh kuman pada air
+    minum dan kolam renang.

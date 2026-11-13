@@ -69,7 +69,7 @@ namespace ARKimia.EditorTools
             bool added = manager.TryAddFromQuickDrop(elemO);
             Assert(added && manager.GetQuantity(elemO) == 1, "Case 2 failed: QuickDrop O should set quantity 1.");
             Assert(frame52.activeSelf && !frame49.activeSelf, "Case 2 failed: Frame 52 must auto-expand on 0->1.");
-            Assert(gabungRoot.activeSelf && !combineBtn.interactable, "Case 2 failed: Gabungkan should be visible but disabled for O=1.");
+            Assert(!gabungRoot.activeSelf, "Case 2 failed: Gabungkan must stay hidden for a single element O=1.");
 
             // 3. Max cap = 10 & Plus button disabled
             manager.SetQuantity(elemO, 15);
@@ -93,9 +93,11 @@ namespace ARKimia.EditorTools
             Assert(manager.GetQuantity(elemO) == 0 && !frame52.activeSelf && !frame49.activeSelf && !gabungRoot.activeSelf,
                 "Case 6 failed: Reaching 0 must hide row and panels.");
 
-            // 7. Valid recipe H=2, O=1 -> Gabungkan active & glowing
-            manager.SetQuantity(elemH, 2);
+            // 7. Related elements with wrong counts -> disabled button; correct counts -> active; unrelated -> hidden
+            manager.SetQuantity(elemH, 1);
             manager.SetQuantity(elemO, 1);
+            Assert(gabungRoot.activeSelf && !combineBtn.interactable, "Case 7a failed: H=1,O=1 must show disabled Gabungkan.");
+            manager.SetQuantity(elemH, 2);
             CompoundSO match = manager.EvaluateCurrentCombination();
             Assert(match != null && match.ChemicalFormula == "H2O", "Case 7 failed: H=2, O=1 must match H2O.");
             Assert(combineBtn.interactable && glowObj.activeSelf, "Case 7 failed: Gabungkan button must be enabled and glowing.");
@@ -149,8 +151,8 @@ namespace ARKimia.EditorTools
             handleDetected.Invoke(manager, new object[] { handlerO });
             handleDetected.Invoke(manager, new object[] { handlerNa });
             manager.AddQuantity(elemH, 1); // H=2, O=1, Na=1 -> invalid with Na active
-            Assert(manager.EvaluateCurrentCombination() == null && !combineBtn.interactable,
-                "Case 10d failed: H=2, O=1, Na=1 must not match H2O while Na=1.");
+            Assert(manager.EvaluateCurrentCombination() == null && !gabungRoot.activeSelf,
+                "Case 10d failed: H=2, O=1, Na=1 must not match H2O and Gabungkan must be hidden.");
 
             manager.AddQuantity(handlerNa.ElementData, -1); // Na=0 (still tracked), H=2, O=1
             CompoundSO multiMatch = manager.EvaluateCurrentCombination();
@@ -189,6 +191,160 @@ namespace ARKimia.EditorTools
             targetNaObj.transform.position = origNaPos;
             targetClObj.transform.position = origClPos;
             manager.ClearActiveCompoundVisual();
+
+            // 12. Verify enlarged Figma Frame 52 dimensions & UIDraggablePanel dynamic movement
+            RectTransform f52Rt = frame52.GetComponent<RectTransform>();
+            RectTransform f49Rt = frame49.GetComponent<RectTransform>();
+            var drag52 = frame52.GetComponent<UIDraggablePanel>();
+            var drag49 = frame49.GetComponent<UIDraggablePanel>();
+
+            Assert(drag52 != null && drag49 != null, "Case 12a failed: UIDraggablePanel must be attached to both Frame 52 and Frame 49.");
+            Assert(f52Rt.sizeDelta.x >= 169f && f52Rt.sizeDelta.y >= 566f,
+                $"Case 12b failed: Frame 52 panel size should match/exceed Figma 169x566, got {f52Rt.sizeDelta}.");
+            Assert(f49Rt.sizeDelta.x >= 130f && f49Rt.sizeDelta.y >= 130f,
+                $"Case 12c failed: Minimized button should be enlarged (>= 130x130), got {f49Rt.sizeDelta}.");
+
+            Transform rowTpl = f52Rt.Find("InnerPanel/ScrollViewport/RowsContainer/RowTemplate");
+            Assert(rowTpl != null, "Case 12d failed: RowTemplate missing in hierarchy.");
+            RectTransform rowRt = rowTpl.GetComponent<RectTransform>();
+            RectTransform symRt = rowTpl.Find("SymbolBox") as RectTransform;
+            RectTransform barRt = rowTpl.Find("CounterBar") as RectTransform;
+            Assert(rowRt.sizeDelta.x >= 125f && rowRt.sizeDelta.y >= 185f,
+                $"Case 12e failed: Row template size should match Figma elem-count 125x185, got {rowRt.sizeDelta}.");
+            Assert(symRt != null && symRt.sizeDelta.x >= 125f && symRt.sizeDelta.y >= 125f,
+                $"Case 12f failed: SymbolBox should be >= 125x125, got {symRt?.sizeDelta}.");
+            Assert(barRt != null && barRt.sizeDelta.x >= 125f && barRt.sizeDelta.y >= 45f,
+                $"Case 12g failed: CounterBar should be >= 125x45, got {barRt?.sizeDelta}.");
+
+            // Test top-only drag handle, ScrollRect preservation, and position sync between Frame 49 and Frame 52
+            Transform scrollVp = f52Rt.Find("InnerPanel/ScrollViewport");
+            Assert(scrollVp != null && scrollVp.GetComponent<ScrollRect>() != null,
+                "Case 12h failed: ScrollViewport must have ScrollRect attached for scrolling element cards.");
+            Assert(symRt.GetComponent<UIDragForwarder>() == null,
+                "Case 12h failed: SymbolBox must NOT have UIDragForwarder so dragging cards scrolls the list.");
+
+            Transform dragGrip = f52Rt.Find("InnerPanel/DragHandleGrip");
+            var gripForwarder = dragGrip != null ? dragGrip.GetComponent<UIDragForwarder>() : null;
+            Assert(gripForwarder != null && drag52.DragHandle == dragGrip as RectTransform,
+                "Case 12i failed: DragHandleGrip at top of Frame 52 must have UIDragForwarder and be wired as DragHandle.");
+
+            Vector2 initialPos = f52Rt.anchoredPosition;
+            var pointerEvent = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current)
+            {
+                position = new Vector2(200f, 200f),
+                delta = Vector2.zero
+            };
+
+            // Dragging via top grip handle moves Frame 52 AND syncs Frame 49 position
+            gripForwarder.OnPointerDown(pointerEvent);
+            pointerEvent.position = new Vector2(260f, 260f);
+            pointerEvent.delta = new Vector2(60f, 60f);
+            gripForwarder.OnBeginDrag(pointerEvent);
+            gripForwarder.OnDrag(pointerEvent);
+            gripForwarder.OnEndDrag(pointerEvent);
+            Assert(f52Rt.anchoredPosition != initialPos && f49Rt.anchoredPosition == f52Rt.anchoredPosition,
+                "Case 12j failed: Dragging top grip handle must move Frame 52 and sync Frame 49 position.");
+
+            // Dragging Frame 49 (minimized icon) and clicking to expand must open Frame 52 at Frame 49's new position
+            pointerEvent.position = new Vector2(300f, 300f);
+            pointerEvent.delta = Vector2.zero;
+            drag49.OnPointerDown(pointerEvent);
+            pointerEvent.position = new Vector2(420f, 380f);
+            pointerEvent.delta = new Vector2(120f, 80f);
+            drag49.OnBeginDrag(pointerEvent);
+            drag49.OnDrag(pointerEvent);
+            drag49.OnEndDrag(pointerEvent);
+            Vector2 movedIconPos = f49Rt.anchoredPosition;
+            Assert(movedIconPos != initialPos && f52Rt.anchoredPosition == movedIconPos,
+                "Case 12k failed: Moving Frame 49 icon must sync Frame 52 position.");
+
+            f52Rt.anchoredPosition = initialPos;
+            f49Rt.anchoredPosition = initialPos;
+            drag52.ClampToBoundary();
+            drag49.ClampToBoundary();
+
+            // 13. Right Sidebar (ElementSidebarUI, SidebarCollapse, Quickdrop, EncyclopediaPopup) Integration
+            ElementSidebarUI rightSidebar = safeArea.GetComponentInChildren<ElementSidebarUI>(true);
+            SidebarCollapse sidebarCollapse = safeArea.GetComponentInChildren<SidebarCollapse>(true);
+            EncyclopediaPopup encyclopedia = UnityEngine.Object.FindAnyObjectByType<EncyclopediaPopup>();
+            DropVisualSpawner dropSpawner = UnityEngine.Object.FindAnyObjectByType<DropVisualSpawner>();
+
+            Assert(rightSidebar != null && sidebarCollapse != null, "Case 13a failed: Right Sidebar (ElementSidebarUI + SidebarCollapse) missing in SafeArea.");
+            Assert(encyclopedia != null, "Case 13b failed: EncyclopediaPopup missing in scene.");
+            Assert(dropSpawner != null, "Case 13c failed: DropVisualSpawner missing in scene.");
+
+            var sidebarStart = typeof(ElementSidebarUI).GetMethod("Start", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var collapseAwake = typeof(SidebarCollapse).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var collapseStart = typeof(SidebarCollapse).GetMethod("Start", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var encAwake = typeof(EncyclopediaPopup).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var encOnEnable = typeof(EncyclopediaPopup).GetMethod("OnEnable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var spawnerOnEnable = typeof(DropVisualSpawner).GetMethod("OnEnable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+            collapseAwake?.Invoke(sidebarCollapse, null);
+            collapseStart?.Invoke(sidebarCollapse, null);
+            sidebarStart?.Invoke(rightSidebar, null);
+            encAwake?.Invoke(encyclopedia, null);
+            encOnEnable?.Invoke(encyclopedia, null);
+            spawnerOnEnable?.Invoke(dropSpawner, null);
+
+            // Discovered elements (H, O, Na, Cl from earlier cases) should appear in Unsur tab
+            rightSidebar.SetTab(ElementSidebarUI.Tab.Unsur);
+            ElementListItemUI[] unsurItems = rightSidebar.listParent.GetComponentsInChildren<ElementListItemUI>(false);
+            Assert(unsurItems.Length >= 4, $"Case 13d failed: Discovered elements (H, O, Na, Cl) must appear in Unsur tab, got {unsurItems.Length}.");
+
+            // Discovered compounds (H2O, NaCl from earlier cases) should appear in Senyawa tab
+            rightSidebar.SetTab(ElementSidebarUI.Tab.Senyawa);
+            ElementListItemUI[] senyawaItems = rightSidebar.listParent.GetComponentsInChildren<ElementListItemUI>(false);
+            Assert(senyawaItems.Length >= 2, $"Case 13e failed: Discovered compounds (H2O, NaCl) must appear in Senyawa tab, got {senyawaItems.Length}.");
+
+            // Search filter test
+            rightSidebar.searchInput.text = "Air";
+            rightSidebar.Refresh();
+            ElementListItemUI[] filteredItems = rightSidebar.listParent.GetComponentsInChildren<ElementListItemUI>(false);
+            Assert(filteredItems.Length == 1 && filteredItems[0].Compound != null && filteredItems[0].Compound.ChemicalFormula == "H2O",
+                "Case 13f failed: Searching 'Air' in Senyawa tab must filter to H2O.");
+            rightSidebar.searchInput.text = "";
+            rightSidebar.SetTab(ElementSidebarUI.Tab.Unsur);
+
+            // Quickdrop drag-and-drop from Right Sidebar -> increments Left Sidebar MixingCart counter
+            manager.ResetCart();
+            QuickdropEvents.RaiseElementDropped(elemO, new Vector2(800f, 540f));
+            Assert(manager.GetQuantity(elemO) == 1 && frame52.activeSelf,
+                "Case 13g failed: Dropping element O from Right Sidebar must add O=1 to Left Sidebar MixingCart.");
+            manager.ResetCart();
+
+            // Long-press info request -> opens EncyclopediaPopup
+            QuickdropEvents.RaiseElementInfoRequested(elemO);
+            Assert(encyclopedia.panel.activeSelf && encyclopedia.categoryText.text == "UNSUR" && encyclopedia.symbolText.text == "O",
+                "Case 13h failed: Long-press on element O must open EncyclopediaPopup with Oksigen info.");
+            encyclopedia.Close();
+            Assert(!encyclopedia.panel.activeSelf, "Case 13i failed: Closing EncyclopediaPopup must hide overlay panel.");
+
+            // SidebarCollapse toggle test
+            Assert(!sidebarCollapse.IsCollapsed, "Case 13j failed: Right Sidebar should start expanded.");
+            sidebarCollapse.SetCollapsed(true, instant: true);
+            Assert(sidebarCollapse.IsCollapsed && Mathf.Abs(sidebarCollapse.arrowIcon.localEulerAngles.z - 180f) < 1f,
+                "Case 13k failed: Collapsing Right Sidebar must slide sidebar and rotate arrow icon 180 degrees.");
+            sidebarCollapse.SetCollapsed(false, instant: true);
+
+            // 14. Reset button zeroes everything; unrelated pair hides Gabungkan; unread badge clears on read
+            ElementSO elemCl = db.GetElementBySymbol("Cl");
+            manager.ResetCart();
+            manager.SetQuantity(elemO, 1);
+            manager.SetQuantity(elemCl, 1);
+            Assert(!gabungRoot.activeSelf, "Case 14a failed: O + Cl (unrelated) must hide Gabungkan.");
+            manager.SetQuantity(elemH, 2);
+            manager.SetQuantity(elemCl, 0);
+            Assert(gabungRoot.activeSelf && combineBtn.interactable, "Case 14b failed: H=2,O=1 must show active Gabungkan.");
+
+            var resetBtn = frame52.transform.Find("ResetButton").GetComponent<Button>();
+            resetBtn.onClick.Invoke();
+            Assert(manager.ActiveElementTypeCount == 0 && !gabungRoot.activeSelf && !frame52.activeSelf,
+                "Case 14c failed: Reset must zero all elements and hide panels.");
+
+            manager.RegisterElementDiscovery(elemO);
+            manager.MarkElementRead(elemO);
+            Assert(!manager.IsElementUnread(elemO), "Case 14e failed: MarkElementRead must clear unread flag.");
         }
 
         private static void Assert(bool condition, string message)

@@ -62,6 +62,11 @@ namespace ARKimia.Data
         public string Description => description;
         public string Applications => applications;
 
+        // Compatibility aliases for Quickdrop / Sidebar scripts
+        public string formula => chemicalFormula;
+        public string displayName => compoundName;
+        public GameObject modelPrefab => moleculeModelPrefab;
+
         public bool MatchesRecipe(IReadOnlyDictionary<ElementSO, int> activeElements)
         {
             if (activeElements == null || ingredients.Count == 0 || activeElements.Count != ingredients.Count)
@@ -74,6 +79,24 @@ namespace ARKimia.Data
                     return false;
 
                 if (!activeElements.TryGetValue(ingredient.element, out int count) || count != ingredient.quantity)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public bool MatchesElementSet(IReadOnlyDictionary<ElementSO, int> activeElements)
+        {
+            if (activeElements == null || ingredients.Count < 2 || activeElements.Count != ingredients.Count)
+                return false;
+
+            for (int i = 0; i < ingredients.Count; i++)
+            {
+                ElementIngredient ingredient = ingredients[i];
+                if (ingredient.element == null)
+                    return false;
+
+                if (!activeElements.TryGetValue(ingredient.element, out int count) || count <= 0)
                     return false;
             }
 

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -6,6 +8,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using ARKimia.Data;
+using ARKimia.Gameplay;
 using ARKimia.Tracking;
 using ARKimia.UI;
 
@@ -14,6 +17,7 @@ namespace ARKimia.EditorTools
     public static class MixingCartSceneBuilder
     {
         private const string UiSpritesFolder = "Assets/Sprites/UI/LeftSidebar";
+        private const string RightSidebarSpritesFolder = "Assets/_Project/Art/UI/Sidebar";
         private const string FontsFolder = "Assets/Fonts";
         private const string MaterialsFolder = "Assets/Materials";
         private const string PrefabsFolder = "Assets/Prefabs/UI";
@@ -72,6 +76,9 @@ namespace ARKimia.EditorTools
                 canvasRoot,
                 PrefabAssetPath,
                 InteractionMode.AutomatedAction);
+
+            BuildEncyclopediaPopupCanvas(roundedRect, btnCloseX != null ? btnCloseX : circleSprite);
+            EnsureDropVisualSpawner();
 
             // Hide debug IMGUI overlay so it does not overlap HUD in Play Mode.
             MultiMarkerDebugOverlay debugOverlay = Object.FindAnyObjectByType<MultiMarkerDebugOverlay>();
@@ -175,13 +182,13 @@ namespace ARKimia.EditorTools
             RectTransform safeArea = CreateRect("SafeArea", canvasGo.transform);
             StretchFull(safeArea, 0f);
 
-            // Frame 49: Minimized icon + red count badge (Bottom-Left)
+            // Frame 49: Minimized icon + red count badge (Bottom-Left) - Draggable & Enlarged
             RectTransform frame49Root = CreateRect("Frame49_Minimized", safeArea);
             frame49Root.anchorMin = Vector2.zero;
             frame49Root.anchorMax = Vector2.zero;
             frame49Root.pivot = Vector2.zero;
-            frame49Root.anchoredPosition = new Vector2(80f, 92f);
-            frame49Root.sizeDelta = new Vector2(120f, 120f);
+            frame49Root.anchoredPosition = new Vector2(75f, 90f);
+            frame49Root.sizeDelta = new Vector2(136f, 136f);
 
             var expandImg = frame49Root.gameObject.AddComponent<Image>();
             expandImg.sprite = iconCart != null ? iconCart : roundedRect;
@@ -191,46 +198,81 @@ namespace ARKimia.EditorTools
             var expandBtn = frame49Root.gameObject.AddComponent<Button>();
             expandBtn.targetGraphic = expandImg;
 
+            var drag49 = frame49Root.gameObject.AddComponent<UIDraggablePanel>();
+            drag49.Initialize(frame49Root, safeArea);
+
             RectTransform badgeRect = CreateRect("ActiveCountBadge", frame49Root);
             badgeRect.anchorMin = new Vector2(1f, 1f);
             badgeRect.anchorMax = new Vector2(1f, 1f);
             badgeRect.pivot = new Vector2(0.5f, 0.5f);
             badgeRect.anchoredPosition = new Vector2(-6f, -6f);
-            badgeRect.sizeDelta = new Vector2(40f, 40f);
+            badgeRect.sizeDelta = new Vector2(46f, 46f);
 
             var badgeBg = badgeRect.gameObject.AddComponent<Image>();
             badgeBg.sprite = circleSprite;
             badgeBg.color = colBadgeRed;
 
-            Text badgeText = CreateText("CountText", badgeRect, fontText, "1", 22, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
+            Text badgeText = CreateText("CountText", badgeRect, fontText, "1", 26, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
             StretchFull(badgeText.rectTransform, 0f);
 
-            // Frame 52: Expanded vertical counter panel (Bottom-Left)
+            // Frame 52: Expanded vertical counter panel (Bottom-Left) - Enlarged per Figma Frame 52 & Draggable
             RectTransform frame52Root = CreateRect("Frame52_Expanded", safeArea);
             frame52Root.anchorMin = Vector2.zero;
             frame52Root.anchorMax = Vector2.zero;
             frame52Root.pivot = Vector2.zero;
-            frame52Root.anchoredPosition = new Vector2(88f, 92f);
-            frame52Root.sizeDelta = new Vector2(144f, 548f);
+            frame52Root.anchoredPosition = new Vector2(75f, 90f);
+            frame52Root.sizeDelta = new Vector2(176f, 580f);
 
             var outerImg = frame52Root.gameObject.AddComponent<Image>();
             outerImg.sprite = roundedRect;
             outerImg.type = Image.Type.Sliced;
             outerImg.color = colOuterBorder;
+            outerImg.raycastTarget = false;
+
+            var drag52 = frame52Root.gameObject.AddComponent<UIDraggablePanel>();
 
             RectTransform innerPanel = CreateRect("InnerPanel", frame52Root);
-            StretchFull(innerPanel, 10f);
+            StretchFull(innerPanel, 12f);
             var innerImg = innerPanel.gameObject.AddComponent<Image>();
             innerImg.sprite = roundedRect;
             innerImg.type = Image.Type.Sliced;
             innerImg.color = colPanelFill;
+            innerImg.raycastTarget = false;
 
-            // Scrollable viewport inside Frame 52 so 4+ elements scroll smoothly without overflowing
+            // Header Drag Grip Indicator (top-only drag zone for Frame 52)
+            RectTransform dragHandleRt = CreateRect("DragHandleGrip", innerPanel);
+            dragHandleRt.anchorMin = new Vector2(0f, 1f);
+            dragHandleRt.anchorMax = new Vector2(1f, 1f);
+            dragHandleRt.pivot = new Vector2(0.5f, 1f);
+            dragHandleRt.anchoredPosition = Vector2.zero;
+            dragHandleRt.sizeDelta = new Vector2(0f, 36f);
+            var dragHandleHitbox = dragHandleRt.gameObject.AddComponent<Image>();
+            dragHandleHitbox.color = new Color(0f, 0f, 0f, 0.001f);
+            dragHandleHitbox.raycastTarget = true;
+            var handleForwarder = dragHandleRt.gameObject.AddComponent<UIDragForwarder>();
+            handleForwarder.SetTarget(drag52);
+
+            drag52.Initialize(frame52Root, safeArea, dragHandleRt, drag49);
+            drag49.SetLinkedDraggable(drag52);
+
+            RectTransform gripPillRt = CreateRect("GripPill", dragHandleRt);
+            gripPillRt.anchorMin = new Vector2(0.5f, 0.5f);
+            gripPillRt.anchorMax = new Vector2(0.5f, 0.5f);
+            gripPillRt.pivot = new Vector2(0.5f, 0.5f);
+            gripPillRt.anchoredPosition = new Vector2(0f, -2f);
+            gripPillRt.sizeDelta = new Vector2(50f, 6f);
+            var gripPillImg = gripPillRt.gameObject.AddComponent<Image>();
+            gripPillImg.sprite = roundedRect;
+            gripPillImg.type = Image.Type.Sliced;
+            gripPillImg.color = new Color(1f, 0.94f, 0.87f, 0.45f);
+            gripPillImg.raycastTarget = false;
+
+            // Scrollable viewport inside Frame 52 (below DragHandleGrip) so 3+ elements scroll smoothly
             RectTransform scrollRectRt = CreateRect("ScrollViewport", innerPanel);
             scrollRectRt.anchorMin = Vector2.zero;
             scrollRectRt.anchorMax = Vector2.one;
-            scrollRectRt.offsetMin = new Vector2(6f, 14f);
-            scrollRectRt.offsetMax = new Vector2(-6f, -18f);
+            scrollRectRt.offsetMin = new Vector2(8f, 12f);
+            scrollRectRt.offsetMax = new Vector2(-8f, -36f);
             scrollRectRt.gameObject.AddComponent<RectMask2D>();
             var scrollBg = scrollRectRt.gameObject.AddComponent<Image>();
             scrollBg.color = new Color(0f, 0f, 0f, 0.001f);
@@ -243,8 +285,8 @@ namespace ARKimia.EditorTools
             contentRt.sizeDelta = new Vector2(0f, 0f);
 
             var vlg = contentRt.gameObject.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(0, 0, 6, 8);
-            vlg.spacing = 22f;
+            vlg.padding = new RectOffset(0, 0, 8, 12);
+            vlg.spacing = 28f;
             vlg.childAlignment = TextAnchor.UpperCenter;
             vlg.childControlWidth = false;
             vlg.childControlHeight = false;
@@ -255,7 +297,7 @@ namespace ARKimia.EditorTools
             fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            var scrollRect = innerPanel.gameObject.AddComponent<ScrollRect>();
+            var scrollRect = scrollRectRt.gameObject.AddComponent<ScrollRect>();
             scrollRect.viewport = scrollRectRt;
             scrollRect.content = contentRt;
             scrollRect.horizontal = false;
@@ -263,16 +305,16 @@ namespace ARKimia.EditorTools
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
             scrollRect.scrollSensitivity = 28f;
 
-            // Row Template (elem-count)
+            // Row Template (elem-count: 125x185 per Figma Frame 52)
             MixingCartRowUI rowTemplate = BuildRowTemplate(contentRt, fontLogoUnsur, fontText, roundedRect, minusSprite, plusSprite, colGold, colDarkInk, colCounterBar);
 
-            // Red X Minimize Button at top-right of Frame 52
+            // Red X Minimize Button at top-right of Frame 52 (48x48 per Figma Frame 52 / 125:566)
             RectTransform closeBtnRt = CreateRect("MinimizeButton_X", frame52Root);
             closeBtnRt.anchorMin = new Vector2(1f, 1f);
             closeBtnRt.anchorMax = new Vector2(1f, 1f);
             closeBtnRt.pivot = new Vector2(0.5f, 0.5f);
-            closeBtnRt.anchoredPosition = new Vector2(-4f, -4f);
-            closeBtnRt.sizeDelta = new Vector2(42f, 42f);
+            closeBtnRt.anchoredPosition = new Vector2(8f, 8f);
+            closeBtnRt.sizeDelta = new Vector2(48f, 48f);
 
             var closeImg = closeBtnRt.gameObject.AddComponent<Image>();
             closeImg.sprite = closeX != null ? closeX : circleSprite;
@@ -281,6 +323,43 @@ namespace ARKimia.EditorTools
 
             var closeBtn = closeBtnRt.gameObject.AddComponent<Button>();
             closeBtn.targetGraphic = closeImg;
+
+            // Reset button under Frame 52 (clears all 3D models and zeroes scanned elements)
+            RectTransform resetBtnRt = CreateRect("ResetButton", frame52Root);
+            resetBtnRt.anchorMin = new Vector2(0.5f, 0f);
+            resetBtnRt.anchorMax = new Vector2(0.5f, 0f);
+            resetBtnRt.pivot = new Vector2(0.5f, 1f);
+            resetBtnRt.anchoredPosition = new Vector2(0f, -10f);
+            resetBtnRt.sizeDelta = new Vector2(150f, 52f);
+
+            var resetImg = resetBtnRt.gameObject.AddComponent<Image>();
+            resetImg.sprite = roundedRect;
+            resetImg.type = Image.Type.Sliced;
+            resetImg.color = Hex("#E5252A");
+
+            var resetBtn = resetBtnRt.gameObject.AddComponent<Button>();
+            resetBtn.targetGraphic = resetImg;
+
+            Text resetLabel = CreateText("Label", resetBtnRt, fontTitle, "Reset", 24, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
+            StretchFull(resetLabel.rectTransform, 0f);
+
+            // Toast (top-center, small, auto-hides)
+            RectTransform toastRt = CreateRect("NewElementToast", safeArea);
+            toastRt.anchorMin = new Vector2(0.5f, 1f);
+            toastRt.anchorMax = new Vector2(0.5f, 1f);
+            toastRt.pivot = new Vector2(0.5f, 1f);
+            toastRt.anchoredPosition = new Vector2(-120f, -20f);
+            toastRt.sizeDelta = new Vector2(380f, 52f);
+
+            var toastBg = toastRt.gameObject.AddComponent<Image>();
+            toastBg.sprite = roundedRect;
+            toastBg.type = Image.Type.Sliced;
+            toastBg.color = new Color(colOuterBorder.r, colOuterBorder.g, colOuterBorder.b, 0.92f);
+            toastBg.raycastTarget = false;
+
+            Text toastTxt = CreateText("ToastText", toastRt, fontTitle, "Unsur Baru", 22, FontStyle.Normal, colCream, TextAnchor.MiddleCenter);
+            StretchFull(toastTxt.rectTransform, 6f);
+            toastRt.gameObject.SetActive(false);
 
             // Gabungkan Button (Bottom-Center of AR viewport)
             RectTransform gabungRoot = CreateRect("GabungkanRoot", safeArea);
@@ -321,8 +400,8 @@ namespace ARKimia.EditorTools
             popupRoot.anchorMin = new Vector2(0.5f, 1f);
             popupRoot.anchorMax = new Vector2(0.5f, 1f);
             popupRoot.pivot = new Vector2(0.5f, 1f);
-            popupRoot.anchoredPosition = new Vector2(-120f, -36f);
-            popupRoot.sizeDelta = new Vector2(560f, 256f);
+            popupRoot.anchoredPosition = new Vector2(-120f, -84f);
+            popupRoot.sizeDelta = new Vector2(420f, 190f);
 
             var popupBorder = popupRoot.gameObject.AddComponent<Image>();
             popupBorder.sprite = roundedRect;
@@ -340,37 +419,37 @@ namespace ARKimia.EditorTools
             headerBanner.anchorMin = new Vector2(0f, 1f);
             headerBanner.anchorMax = new Vector2(1f, 1f);
             headerBanner.pivot = new Vector2(0.5f, 1f);
-            headerBanner.anchoredPosition = new Vector2(0f, -12f);
-            headerBanner.sizeDelta = new Vector2(-28f, 48f);
+            headerBanner.anchoredPosition = new Vector2(0f, -10f);
+            headerBanner.sizeDelta = new Vector2(-24f, 38f);
 
             var bannerImg = headerBanner.gameObject.AddComponent<Image>();
             bannerImg.sprite = roundedRect;
             bannerImg.type = Image.Type.Sliced;
             bannerImg.color = colGold;
 
-            Text popupTitle = CreateText("PopupTitle", headerBanner, fontTitle, "Senyawa Baru Ditemukan!", 25, FontStyle.Normal, colOuterBorder, TextAnchor.MiddleCenter);
+            Text popupTitle = CreateText("PopupTitle", headerBanner, fontTitle, "Senyawa Baru Ditemukan!", 20, FontStyle.Normal, colOuterBorder, TextAnchor.MiddleCenter);
             StretchFull(popupTitle.rectTransform, 4f);
 
-            Text popupCompound = CreateText("PopupCompound", popupInner, fontTitle, "H<size=30>2</size>O  —  Air", 34, FontStyle.Normal, colCream, TextAnchor.MiddleCenter);
+            Text popupCompound = CreateText("PopupCompound", popupInner, fontTitle, "H<size=24>2</size>O  —  Air", 28, FontStyle.Normal, colCream, TextAnchor.MiddleCenter);
             popupCompound.supportRichText = true;
             popupCompound.rectTransform.anchorMin = new Vector2(0f, 1f);
             popupCompound.rectTransform.anchorMax = new Vector2(1f, 1f);
             popupCompound.rectTransform.pivot = new Vector2(0.5f, 1f);
-            popupCompound.rectTransform.anchoredPosition = new Vector2(0f, -68f);
-            popupCompound.rectTransform.sizeDelta = new Vector2(-32f, 48f);
+            popupCompound.rectTransform.anchoredPosition = new Vector2(0f, -54f);
+            popupCompound.rectTransform.sizeDelta = new Vector2(-24f, 40f);
 
-            Text popupDesc = CreateText("PopupDescription", popupInner, fontText, "Deskripsi senyawa.", 20, FontStyle.Normal, Color.white, TextAnchor.UpperCenter);
+            Text popupDesc = CreateText("PopupDescription", popupInner, fontText, "Deskripsi senyawa.", 16, FontStyle.Normal, Color.white, TextAnchor.UpperCenter);
             popupDesc.rectTransform.anchorMin = new Vector2(0f, 0f);
             popupDesc.rectTransform.anchorMax = new Vector2(1f, 1f);
-            popupDesc.rectTransform.offsetMin = new Vector2(24f, 64f);
-            popupDesc.rectTransform.offsetMax = new Vector2(-24f, -120f);
+            popupDesc.rectTransform.offsetMin = new Vector2(20f, 54f);
+            popupDesc.rectTransform.offsetMax = new Vector2(-20f, -98f);
 
             RectTransform continueBtnRt = CreateRect("ContinueButton", popupInner);
             continueBtnRt.anchorMin = new Vector2(0.5f, 0f);
             continueBtnRt.anchorMax = new Vector2(0.5f, 0f);
             continueBtnRt.pivot = new Vector2(0.5f, 0f);
-            continueBtnRt.anchoredPosition = new Vector2(0f, 12f);
-            continueBtnRt.sizeDelta = new Vector2(180f, 42f);
+            continueBtnRt.anchoredPosition = new Vector2(0f, 10f);
+            continueBtnRt.sizeDelta = new Vector2(150f, 36f);
 
             var continueImg = continueBtnRt.gameObject.AddComponent<Image>();
             continueImg.sprite = roundedRect;
@@ -387,6 +466,8 @@ namespace ARKimia.EditorTools
             frame49Root.gameObject.SetActive(false);
             frame52Root.gameObject.SetActive(false);
             gabungRoot.gameObject.SetActive(false);
+
+            BuildRightSidebar(safeArea, roundedRect, colOuterBorder, colCream);
 
             var cartUi = canvasGo.AddComponent<MixingCartUI>();
             cartUi.ConfigureReferences(
@@ -409,7 +490,10 @@ namespace ARKimia.EditorTools
                 popupTitle,
                 popupCompound,
                 popupDesc,
-                continueBtn);
+                continueBtn,
+                resetBtn,
+                toastRt.gameObject,
+                toastTxt);
 
             return canvasGo;
         }
@@ -426,19 +510,19 @@ namespace ARKimia.EditorTools
             Color colCounterBar)
         {
             RectTransform rowRt = CreateRect("RowTemplate", parent);
-            rowRt.sizeDelta = new Vector2(100f, 148f);
+            rowRt.sizeDelta = new Vector2(125f, 185f);
 
             var layoutElem = rowRt.gameObject.AddComponent<LayoutElement>();
-            layoutElem.preferredWidth = 100f;
-            layoutElem.preferredHeight = 148f;
+            layoutElem.preferredWidth = 125f;
+            layoutElem.preferredHeight = 185f;
 
-            // Symbol Box (100x100)
+            // Symbol Box (125x125 per Figma Frame 52)
             RectTransform symbolBox = CreateRect("SymbolBox", rowRt);
             symbolBox.anchorMin = new Vector2(0.5f, 1f);
             symbolBox.anchorMax = new Vector2(0.5f, 1f);
             symbolBox.pivot = new Vector2(0.5f, 1f);
             symbolBox.anchoredPosition = Vector2.zero;
-            symbolBox.sizeDelta = new Vector2(100f, 100f);
+            symbolBox.sizeDelta = new Vector2(125f, 125f);
 
             var symbolBg = symbolBox.gameObject.AddComponent<Image>();
             symbolBg.sprite = roundedRect;
@@ -446,19 +530,19 @@ namespace ARKimia.EditorTools
             symbolBg.pixelsPerUnitMultiplier = 2.2f;
             symbolBg.color = colGold;
 
-            Text symbolText = CreateText("SymbolText", symbolBox, fontLogoUnsur, "O", 56, FontStyle.Normal, colDarkInk, TextAnchor.MiddleCenter);
+            Text symbolText = CreateText("SymbolText", symbolBox, fontLogoUnsur, "O", 84, FontStyle.Normal, colDarkInk, TextAnchor.MiddleCenter);
             symbolText.resizeTextForBestFit = true;
-            symbolText.resizeTextMinSize = 32;
-            symbolText.resizeTextMaxSize = 56;
-            StretchFull(symbolText.rectTransform, 4f);
+            symbolText.resizeTextMinSize = 40;
+            symbolText.resizeTextMaxSize = 84;
+            StretchFull(symbolText.rectTransform, 6f);
 
-            // Counter Bar (100x36)
+            // Counter Bar (125x45 per Figma Frame 52)
             RectTransform counterBar = CreateRect("CounterBar", rowRt);
             counterBar.anchorMin = new Vector2(0.5f, 0f);
             counterBar.anchorMax = new Vector2(0.5f, 0f);
             counterBar.pivot = new Vector2(0.5f, 0f);
             counterBar.anchoredPosition = Vector2.zero;
-            counterBar.sizeDelta = new Vector2(100f, 36f);
+            counterBar.sizeDelta = new Vector2(125f, 45f);
 
             var barBg = counterBar.gameObject.AddComponent<Image>();
             barBg.sprite = roundedRect;
@@ -471,8 +555,8 @@ namespace ARKimia.EditorTools
             minusRt.anchorMin = new Vector2(0f, 0.5f);
             minusRt.anchorMax = new Vector2(0f, 0.5f);
             minusRt.pivot = new Vector2(0f, 0.5f);
-            minusRt.anchoredPosition = new Vector2(4f, 0f);
-            minusRt.sizeDelta = new Vector2(26f, 26f);
+            minusRt.anchoredPosition = new Vector2(6f, 0f);
+            minusRt.sizeDelta = new Vector2(32f, 32f);
 
             var minusImg = minusRt.gameObject.AddComponent<Image>();
             minusImg.sprite = minusSprite != null ? minusSprite : roundedRect;
@@ -487,8 +571,8 @@ namespace ARKimia.EditorTools
             plusRt.anchorMin = new Vector2(1f, 0.5f);
             plusRt.anchorMax = new Vector2(1f, 0.5f);
             plusRt.pivot = new Vector2(1f, 0.5f);
-            plusRt.anchoredPosition = new Vector2(-4f, 0f);
-            plusRt.sizeDelta = new Vector2(26f, 26f);
+            plusRt.anchoredPosition = new Vector2(-6f, 0f);
+            plusRt.sizeDelta = new Vector2(32f, 32f);
 
             var plusImg = plusRt.gameObject.AddComponent<Image>();
             plusImg.sprite = plusSprite != null ? plusSprite : roundedRect;
@@ -499,17 +583,408 @@ namespace ARKimia.EditorTools
             plusBtn.targetGraphic = plusImg;
 
             // Quantity Text
-            Text qtyText = CreateText("QuantityText", counterBar, fontText, "1", 22, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
+            Text qtyText = CreateText("QuantityText", counterBar, fontText, "1", 28, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter);
             qtyText.rectTransform.anchorMin = Vector2.zero;
             qtyText.rectTransform.anchorMax = Vector2.one;
-            qtyText.rectTransform.offsetMin = new Vector2(30f, 0f);
-            qtyText.rectTransform.offsetMax = new Vector2(-30f, 0f);
+            qtyText.rectTransform.offsetMin = new Vector2(38f, 0f);
+            qtyText.rectTransform.offsetMax = new Vector2(-38f, 0f);
 
             var rowUi = rowRt.gameObject.AddComponent<MixingCartRowUI>();
             rowUi.ConfigureReferences(symbolText, qtyText, minusBtn, minusImg, plusBtn, plusImg);
             rowRt.gameObject.SetActive(false);
 
             return rowUi;
+        }
+
+        private static void BuildRightSidebar(
+            RectTransform safeArea,
+            Sprite roundedRect,
+            Color colOuterBorder,
+            Color colCream)
+        {
+            Sprite iconArrow = AssetDatabase.LoadAssetAtPath<Sprite>($"{RightSidebarSpritesFolder}/icon_arrow.png");
+            Sprite bgSearch = AssetDatabase.LoadAssetAtPath<Sprite>($"{RightSidebarSpritesFolder}/bg_search.png");
+            Sprite searchBarFull = AssetDatabase.LoadAssetAtPath<Sprite>($"{RightSidebarSpritesFolder}/search_bar_full.png");
+            ElementListItemUI itemPrefab = AssetDatabase.LoadAssetAtPath<ElementListItemUI>("Assets/_Project/Prefabs/UI/ElementListItem.prefab");
+            TMP_FontAsset jotiSdf = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Art/Fonts/Joti_One/JotiOne-Regular SDF.asset");
+            ChemistryDatabase db = AssetDatabase.LoadAssetAtPath<ChemistryDatabase>(ChemistryDatabasePath);
+
+            // Right Sidebar Panel (312 x 1080 per Figma Frame 52 #58:371)
+            RectTransform sidebarRt = CreateRect("ElementSidebar", safeArea);
+            sidebarRt.anchorMin = new Vector2(1f, 0f);
+            sidebarRt.anchorMax = new Vector2(1f, 1f);
+            sidebarRt.pivot = new Vector2(1f, 0.5f);
+            sidebarRt.anchoredPosition = Vector2.zero;
+            sidebarRt.sizeDelta = new Vector2(312f, 0f);
+
+            var sidebarBg = sidebarRt.gameObject.AddComponent<Image>();
+            Sprite sidebarShape = AssetDatabase.LoadAssetAtPath<Sprite>($"{RightSidebarSpritesFolder}/sidebar_bg.png");
+            if (sidebarShape != null)
+            {
+                sidebarBg.sprite = sidebarShape;
+                sidebarBg.type = Image.Type.Simple;
+                sidebarBg.color = Color.white;
+            }
+            else
+            {
+                sidebarBg.color = colOuterBorder;
+            }
+            sidebarBg.raycastTarget = true;
+
+            // Tabs: Unsur & Senyawa (above SearchBar)
+            RectTransform unsurTabRt = CreateRect("UnsurTab", sidebarRt);
+            unsurTabRt.anchorMin = new Vector2(0f, 1f);
+            unsurTabRt.anchorMax = new Vector2(0f, 1f);
+            unsurTabRt.pivot = new Vector2(0f, 1f);
+            unsurTabRt.anchoredPosition = new Vector2(23f, -146f);
+            unsurTabRt.sizeDelta = new Vector2(128f, 38f);
+
+            var unsurTabImg = unsurTabRt.gameObject.AddComponent<Image>();
+            unsurTabImg.sprite = roundedRect;
+            unsurTabImg.type = Image.Type.Sliced;
+            unsurTabImg.color = new Color32(255, 235, 214, 255);
+
+            var unsurTabBtn = unsurTabRt.gameObject.AddComponent<Button>();
+            unsurTabBtn.targetGraphic = unsurTabImg;
+
+            TextMeshProUGUI unsurTabLabel = CreateTmpText("Label", unsurTabRt, jotiSdf, "Unsur", 20f, new Color32(47, 43, 92, 255), TextAlignmentOptions.Center);
+            StretchFull(unsurTabLabel.rectTransform, 0f);
+
+            RectTransform senyawaTabRt = CreateRect("SenyawaTab", sidebarRt);
+            senyawaTabRt.anchorMin = new Vector2(0f, 1f);
+            senyawaTabRt.anchorMax = new Vector2(0f, 1f);
+            senyawaTabRt.pivot = new Vector2(0f, 1f);
+            senyawaTabRt.anchoredPosition = new Vector2(161f, -146f);
+            senyawaTabRt.sizeDelta = new Vector2(128f, 38f);
+
+            var senyawaTabImg = senyawaTabRt.gameObject.AddComponent<Image>();
+            senyawaTabImg.sprite = roundedRect;
+            senyawaTabImg.type = Image.Type.Sliced;
+            senyawaTabImg.color = new Color32(255, 235, 214, 45);
+
+            var senyawaTabBtn = senyawaTabRt.gameObject.AddComponent<Button>();
+            senyawaTabBtn.targetGraphic = senyawaTabImg;
+
+            TextMeshProUGUI senyawaTabLabel = CreateTmpText("Label", senyawaTabRt, jotiSdf, "Senyawa", 20f, new Color32(255, 235, 214, 255), TextAlignmentOptions.Center);
+            StretchFull(senyawaTabLabel.rectTransform, 0f);
+
+            // Search Bar (#58:375: x=23, y=136, width=266, height=40)
+            RectTransform searchRt = CreateRect("SearchInput", sidebarRt);
+            searchRt.anchorMin = new Vector2(0f, 1f);
+            searchRt.anchorMax = new Vector2(0f, 1f);
+            searchRt.pivot = new Vector2(0f, 1f);
+            searchRt.anchoredPosition = new Vector2(23f, -92f);
+            searchRt.sizeDelta = new Vector2(266f, 40f);
+
+            var searchBgImg = searchRt.gameObject.AddComponent<Image>();
+            searchBgImg.sprite = bgSearch != null ? bgSearch : roundedRect;
+            searchBgImg.color = Color.white;
+            searchBgImg.preserveAspect = false;
+
+            RectTransform placeholderRt = CreateRect("Placeholder", searchRt);
+            StretchFull(placeholderRt, 0f);
+            var placeholderImg = placeholderRt.gameObject.AddComponent<Image>();
+            placeholderImg.sprite = searchBarFull != null ? searchBarFull : (bgSearch != null ? bgSearch : roundedRect);
+            placeholderImg.color = Color.white;
+            placeholderImg.raycastTarget = false;
+
+            RectTransform textAreaRt = CreateRect("Text Area", searchRt);
+            textAreaRt.anchorMin = Vector2.zero;
+            textAreaRt.anchorMax = Vector2.one;
+            textAreaRt.offsetMin = new Vector2(16f, 4f);
+            textAreaRt.offsetMax = new Vector2(-44f, -4f);
+            textAreaRt.gameObject.AddComponent<RectMask2D>();
+
+            TextMeshProUGUI searchText = CreateTmpText("Text", textAreaRt, jotiSdf, "", 18f, new Color32(45, 44, 91, 255), TextAlignmentOptions.MidlineLeft);
+            StretchFull(searchText.rectTransform, 0f);
+
+            var searchInput = searchRt.gameObject.AddComponent<TMP_InputField>();
+            searchInput.textViewport = textAreaRt;
+            searchInput.textComponent = searchText;
+            searchInput.placeholder = placeholderImg;
+            searchInput.targetGraphic = searchBgImg;
+
+            // Scroll View (x=16, width=280 per Figma #58:378)
+            RectTransform scrollViewRt = CreateRect("Scroll View", sidebarRt);
+            scrollViewRt.anchorMin = new Vector2(0f, 0f);
+            scrollViewRt.anchorMax = new Vector2(0f, 1f);
+            scrollViewRt.pivot = new Vector2(0f, 1f);
+            scrollViewRt.offsetMin = new Vector2(16f, 20f);
+            scrollViewRt.offsetMax = new Vector2(296f, -198f);
+
+            var scrollRect = scrollViewRt.gameObject.AddComponent<ScrollRect>();
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.scrollSensitivity = 28f;
+
+            RectTransform viewportRt = CreateRect("Viewport", scrollViewRt);
+            StretchFull(viewportRt, 0f);
+            viewportRt.gameObject.AddComponent<RectMask2D>();
+            var viewportImg = viewportRt.gameObject.AddComponent<Image>();
+            viewportImg.color = new Color(0f, 0f, 0f, 0.001f);
+
+            RectTransform listContentRt = CreateRect("Content", viewportRt);
+            listContentRt.anchorMin = new Vector2(0f, 1f);
+            listContentRt.anchorMax = new Vector2(1f, 1f);
+            listContentRt.pivot = new Vector2(0.5f, 1f);
+            listContentRt.anchoredPosition = Vector2.zero;
+            listContentRt.sizeDelta = Vector2.zero;
+
+            var listVlg = listContentRt.gameObject.AddComponent<VerticalLayoutGroup>();
+            listVlg.padding = new RectOffset(0, 0, 6, 24);
+            listVlg.spacing = 30f;
+            listVlg.childAlignment = TextAnchor.UpperCenter;
+            listVlg.childControlWidth = true;
+            listVlg.childControlHeight = true;
+            listVlg.childForceExpandWidth = true;
+            listVlg.childForceExpandHeight = false;
+
+            var listFitter = listContentRt.gameObject.AddComponent<ContentSizeFitter>();
+            listFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            listFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            scrollRect.viewport = viewportRt;
+            scrollRect.content = listContentRt;
+
+            TextMeshProUGUI emptyTxt = CreateTmpText("EmptyText", viewportRt, jotiSdf, "Belum ada unsur", 22f, new Color32(255, 235, 214, 180), TextAlignmentOptions.Center);
+            StretchFull(emptyTxt.rectTransform, 16f);
+
+            // Minimize / Collapse Button (sibling of ElementSidebar per SidebarCollapse.cs, #238:464: 68x68 at 12,12)
+            RectTransform toggleBtnRt = CreateRect("SidebarToggleButton", safeArea);
+            toggleBtnRt.anchorMin = new Vector2(1f, 1f);
+            toggleBtnRt.anchorMax = new Vector2(1f, 1f);
+            toggleBtnRt.pivot = new Vector2(1f, 1f);
+            toggleBtnRt.anchoredPosition = new Vector2(-232f, -12f);
+            toggleBtnRt.sizeDelta = new Vector2(68f, 68f);
+
+            var toggleBtnHitImg = toggleBtnRt.gameObject.AddComponent<Image>();
+            toggleBtnHitImg.color = new Color(1f, 1f, 1f, 0.001f);
+
+            RectTransform arrowIconRt = CreateRect("ArrowIcon", toggleBtnRt);
+            arrowIconRt.anchorMin = Vector2.zero;
+            arrowIconRt.anchorMax = Vector2.one;
+            arrowIconRt.pivot = new Vector2(0.5f, 0.5f);
+            arrowIconRt.offsetMin = Vector2.zero;
+            arrowIconRt.offsetMax = Vector2.zero;
+
+            var arrowImg = arrowIconRt.gameObject.AddComponent<Image>();
+            arrowImg.sprite = iconArrow != null ? iconArrow : roundedRect;
+            arrowImg.color = Color.white;
+            arrowImg.preserveAspect = true;
+            arrowImg.raycastTarget = false;
+
+            var toggleBtn = toggleBtnRt.gameObject.AddComponent<Button>();
+            toggleBtn.targetGraphic = arrowImg;
+
+            // Red dot on the toggle button: unread discoveries exist
+            RectTransform toggleDotRt = CreateRect("UnreadDot", toggleBtnRt);
+            toggleDotRt.anchorMin = new Vector2(1f, 1f);
+            toggleDotRt.anchorMax = new Vector2(1f, 1f);
+            toggleDotRt.pivot = new Vector2(0.5f, 0.5f);
+            toggleDotRt.anchoredPosition = new Vector2(-6f, -6f);
+            toggleDotRt.sizeDelta = new Vector2(22f, 22f);
+            var toggleDotImg = toggleDotRt.gameObject.AddComponent<Image>();
+            toggleDotImg.sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{UiSpritesFolder}/circle_white.png");
+            toggleDotImg.color = new Color32(229, 37, 42, 255);
+            toggleDotImg.raycastTarget = false;
+            toggleDotRt.gameObject.SetActive(false);
+
+            var sidebarUi = sidebarRt.gameObject.AddComponent<ElementSidebarUI>();
+            sidebarUi.db = db;
+            sidebarUi.onlyShowDiscovered = true;
+            sidebarUi.listParent = listContentRt;
+            sidebarUi.itemPrefab = itemPrefab;
+            sidebarUi.searchInput = searchInput;
+            sidebarUi.unsurTab = unsurTabBtn;
+            sidebarUi.senyawaTab = senyawaTabBtn;
+            sidebarUi.startTab = ElementSidebarUI.Tab.Unsur;
+            sidebarUi.emptyText = emptyTxt;
+            sidebarUi.sidebarUnreadBadge = toggleDotRt.gameObject;
+
+            var sidebarCollapse = sidebarRt.gameObject.AddComponent<SidebarCollapse>();
+            sidebarCollapse.toggleButton = toggleBtn;
+            sidebarCollapse.arrowIcon = arrowIconRt;
+            sidebarCollapse.openInset = 12f;
+            sidebarCollapse.closedInset = 16f;
+            sidebarCollapse.topInset = 12f;
+            sidebarCollapse.startCollapsed = false;
+        }
+
+        private static void BuildEncyclopediaPopupCanvas(Sprite roundedRect, Sprite closeX)
+        {
+            List<EncyclopediaEntry> entries = EncyclopediaDataGenerator.Generate();
+
+            GameObject existing = GameObject.Find("EncyclopediaPopupCanvas");
+            if (existing != null)
+            {
+                Object.DestroyImmediate(existing);
+            }
+
+            TMP_FontAsset jotiSdf = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Art/Fonts/Joti_One/JotiOne-Regular SDF.asset");
+            TMP_FontAsset markoSdf = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Art/Fonts/Marko_One/MarkoOne-Regular SDF.asset");
+
+            var canvasGo = new GameObject("EncyclopediaPopupCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            RectTransform overlayRt = CreateRect("Overlay", canvasGo.transform);
+            StretchFull(overlayRt, 0f);
+            var overlayImg = overlayRt.gameObject.AddComponent<Image>();
+            overlayImg.color = new Color(0.02f, 0.03f, 0.08f, 0.72f);
+
+            RectTransform cardRt = CreateRect("Card", overlayRt);
+            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRt.pivot = new Vector2(0.5f, 0.5f);
+            cardRt.anchoredPosition = Vector2.zero;
+            cardRt.sizeDelta = new Vector2(720f, 460f);
+
+            var cardBorderImg = cardRt.gameObject.AddComponent<Image>();
+            cardBorderImg.sprite = roundedRect;
+            cardBorderImg.type = Image.Type.Sliced;
+            cardBorderImg.color = Hex("#2D2C5B");
+
+            RectTransform cardInnerRt = CreateRect("CardInner", cardRt);
+            StretchFull(cardInnerRt, 10f);
+            var cardInnerImg = cardInnerRt.gameObject.AddComponent<Image>();
+            cardInnerImg.sprite = roundedRect;
+            cardInnerImg.type = Image.Type.Sliced;
+            cardInnerImg.color = Hex("#3D3C66");
+
+            TextMeshProUGUI catTxt = CreateTmpText("CategoryText", cardInnerRt, jotiSdf, "UNSUR", 20f, new Color32(255, 181, 46, 255), TextAlignmentOptions.Left);
+            catTxt.rectTransform.anchorMin = new Vector2(0f, 1f);
+            catTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
+            catTxt.rectTransform.pivot = new Vector2(0f, 1f);
+            catTxt.rectTransform.offsetMin = new Vector2(148f, -48f);
+            catTxt.rectTransform.offsetMax = new Vector2(-64f, -18f);
+
+            RectTransform symBoxRt = CreateRect("SymbolBadge", cardInnerRt);
+            symBoxRt.anchorMin = new Vector2(0f, 1f);
+            symBoxRt.anchorMax = new Vector2(0f, 1f);
+            symBoxRt.pivot = new Vector2(0f, 1f);
+            symBoxRt.anchoredPosition = new Vector2(24f, -20f);
+            symBoxRt.sizeDelta = new Vector2(104f, 104f);
+            var symBoxImg = symBoxRt.gameObject.AddComponent<Image>();
+            symBoxImg.sprite = roundedRect;
+            symBoxImg.type = Image.Type.Sliced;
+            symBoxImg.color = Hex("#F9AD0A");
+
+            TextMeshProUGUI symTxt = CreateTmpText("SymbolText", symBoxRt, markoSdf, "H", 54f, Hex("#000610"), TextAlignmentOptions.Center);
+            StretchFull(symTxt.rectTransform, 6f);
+
+            TextMeshProUGUI nameTxt = CreateTmpText("NameText", cardInnerRt, jotiSdf, "Hidrogen", 36f, Hex("#FFEFDD"), TextAlignmentOptions.Left);
+            nameTxt.rectTransform.anchorMin = new Vector2(0f, 1f);
+            nameTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
+            nameTxt.rectTransform.pivot = new Vector2(0f, 1f);
+            nameTxt.rectTransform.offsetMin = new Vector2(148f, -92f);
+            nameTxt.rectTransform.offsetMax = new Vector2(-64f, -46f);
+
+            TextMeshProUGUI infoTxt = CreateTmpText("InfoText", cardInnerRt, jotiSdf, "Nomor atom 1", 18f, new Color32(255, 239, 221, 200), TextAlignmentOptions.Left);
+            infoTxt.rectTransform.anchorMin = new Vector2(0f, 1f);
+            infoTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
+            infoTxt.rectTransform.pivot = new Vector2(0f, 1f);
+            infoTxt.rectTransform.offsetMin = new Vector2(148f, -124f);
+            infoTxt.rectTransform.offsetMax = new Vector2(-24f, -94f);
+
+            RectTransform accentRt = CreateRect("AccentLine", cardInnerRt);
+            accentRt.anchorMin = new Vector2(0f, 1f);
+            accentRt.anchorMax = new Vector2(1f, 1f);
+            accentRt.pivot = new Vector2(0.5f, 1f);
+            accentRt.offsetMin = new Vector2(24f, -142f);
+            accentRt.offsetMax = new Vector2(-24f, -138f);
+            var accentImg = accentRt.gameObject.AddComponent<Image>();
+            accentImg.color = new Color32(255, 181, 46, 220);
+
+            TextMeshProUGUI descTxt = CreateTmpText("DescText", cardInnerRt, jotiSdf, "Deskripsi", 21f, Color.white, TextAlignmentOptions.TopLeft);
+            descTxt.textWrappingMode = TextWrappingModes.Normal;
+            descTxt.rectTransform.anchorMin = new Vector2(0f, 0f);
+            descTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
+            descTxt.rectTransform.offsetMin = new Vector2(26f, 128f);
+            descTxt.rectTransform.offsetMax = new Vector2(-26f, -154f);
+
+            RectTransform funBoxRt = CreateRect("FunFactBox", cardInnerRt);
+            funBoxRt.anchorMin = new Vector2(0f, 0f);
+            funBoxRt.anchorMax = new Vector2(1f, 0f);
+            funBoxRt.pivot = new Vector2(0.5f, 0f);
+            funBoxRt.offsetMin = new Vector2(24f, 20f);
+            funBoxRt.offsetMax = new Vector2(-24f, 114f);
+            var funBoxImg = funBoxRt.gameObject.AddComponent<Image>();
+            funBoxImg.sprite = roundedRect;
+            funBoxImg.type = Image.Type.Sliced;
+            funBoxImg.color = new Color(1f, 0.71f, 0.18f, 0.16f);
+
+            TextMeshProUGUI funTxt = CreateTmpText("FunFactText", funBoxRt, jotiSdf, "TAHUKAH KAMU?", 18f, Hex("#FFEFDD"), TextAlignmentOptions.TopLeft);
+            funTxt.textWrappingMode = TextWrappingModes.Normal;
+            StretchFull(funTxt.rectTransform, 12f);
+
+            RectTransform closeBtnRt = CreateRect("CloseButton", cardRt);
+            closeBtnRt.anchorMin = new Vector2(1f, 1f);
+            closeBtnRt.anchorMax = new Vector2(1f, 1f);
+            closeBtnRt.pivot = new Vector2(0.5f, 0.5f);
+            closeBtnRt.anchoredPosition = new Vector2(-6f, -6f);
+            closeBtnRt.sizeDelta = new Vector2(48f, 48f);
+            var closeImg = closeBtnRt.gameObject.AddComponent<Image>();
+            closeImg.sprite = closeX;
+            closeImg.color = Color.white;
+            closeImg.preserveAspect = true;
+            var closeBtn = closeBtnRt.gameObject.AddComponent<Button>();
+            closeBtn.targetGraphic = closeImg;
+
+            overlayRt.gameObject.SetActive(false);
+
+            var popup = canvasGo.AddComponent<EncyclopediaPopup>();
+            popup.panel = overlayRt.gameObject;
+            popup.card = cardRt;
+            popup.categoryText = catTxt;
+            popup.symbolText = symTxt;
+            popup.nameText = nameTxt;
+            popup.infoText = infoTxt;
+            popup.descText = descTxt;
+            popup.funFactText = funTxt;
+            popup.closeButton = closeBtn;
+            popup.accentLine = accentImg;
+            popup.funFactBox = funBoxRt.gameObject;
+            popup.entries = entries;
+        }
+
+        private static void EnsureDropVisualSpawner()
+        {
+            DropVisualSpawner existing = Object.FindAnyObjectByType<DropVisualSpawner>();
+            if (existing != null)
+                return;
+
+            ElementCombinationManager mgr = Object.FindAnyObjectByType<ElementCombinationManager>();
+            GameObject host = mgr != null ? mgr.gameObject : new GameObject("QuickdropVisualSpawner");
+            var spawner = host.AddComponent<DropVisualSpawner>();
+            spawner.cam = Camera.main;
+        }
+
+        private static TextMeshProUGUI CreateTmpText(
+            string name,
+            Transform parent,
+            TMP_FontAsset font,
+            string content,
+            float fontSize,
+            Color color,
+            TextAlignmentOptions alignment)
+        {
+            RectTransform rt = CreateRect(name, parent);
+            var tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
+            if (font != null) tmp.font = font;
+            tmp.text = content;
+            tmp.fontSize = fontSize;
+            tmp.color = color;
+            tmp.alignment = alignment;
+            tmp.raycastTarget = false;
+            return tmp;
         }
 
         private static RectTransform CreateRect(string name, Transform parent)
@@ -620,7 +1095,10 @@ namespace ARKimia.EditorTools
 
         private static void ConfigureSpriteImporters()
         {
-            string[] guids = AssetDatabase.FindAssets("t:Texture2D", new[] { UiSpritesFolder });
+            var searchFolders = AssetDatabase.IsValidFolder(RightSidebarSpritesFolder)
+                ? new[] { UiSpritesFolder, RightSidebarSpritesFolder }
+                : new[] { UiSpritesFolder };
+            string[] guids = AssetDatabase.FindAssets("t:Texture2D", searchFolders);
             for (int i = 0; i < guids.Length; i++)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[i]);

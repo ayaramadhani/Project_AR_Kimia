@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_H2SO4
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: H2SO4
+  category: SENYAWA
+  subtitle: Rumus H2SO4 | Bentuk tetrahedral pada atom S pusat
+  description: Asam sulfat tersusun dari dua atom hidrogen, satu atom belerang, dan
+    empat atom oksigen. Senyawa ini merupakan asam mineral kuat yang sangat korosif
+    dan banyak digunakan dalam aki kendaraan serta industri pupuk.
+  funFact: Saat mengencerkan asam sulfat, asam harus selalu dituangkan perlahan ke
+    dalam air, bukan sebaliknya, karena reaksinya melepaskan panas tinggi.

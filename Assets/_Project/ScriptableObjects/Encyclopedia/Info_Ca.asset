@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_Ca
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: Ca
+  category: UNSUR
+  subtitle: Nomor atom 20 | Massa atom 40,078 | Padat (logam alkali tanah)
+  description: Kalsium adalah logam reaktif yang menyusun tulang, gigi, cangkang
+    kerang, dan batu kapur. Kalsium merupakan mineral paling melimpah di dalam tubuh
+    manusia.
+  funFact: Sekitar 99% kalsium dalam tubuh manusia tersimpan di dalam struktur tulang
+    dan gigi.

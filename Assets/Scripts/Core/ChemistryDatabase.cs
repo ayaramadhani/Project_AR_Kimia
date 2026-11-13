@@ -23,6 +23,21 @@ namespace ARKimia.Data
         public Font TitleFont => titleFont;
         public Font TextFont => textFont;
 
+        public CompoundSO GetCompoundByFormula(string formula)
+        {
+            if (string.IsNullOrEmpty(formula))
+                return null;
+
+            for (int i = 0; i < compounds.Count; i++)
+            {
+                CompoundSO comp = compounds[i];
+                if (comp != null && string.Equals(comp.ChemicalFormula, formula, StringComparison.OrdinalIgnoreCase))
+                    return comp;
+            }
+
+            return null;
+        }
+
         public ElementSO GetElementById(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -66,6 +81,21 @@ namespace ARKimia.Data
             }
 
             return null;
+        }
+
+        public bool HasRelatedCompound(IReadOnlyDictionary<ElementSO, int> activeElements)
+        {
+            if (activeElements == null || activeElements.Count < 2)
+                return false;
+
+            for (int i = 0; i < compounds.Count; i++)
+            {
+                CompoundSO compound = compounds[i];
+                if (compound != null && compound.MatchesElementSet(activeElements))
+                    return true;
+            }
+
+            return false;
         }
     }
 }

@@ -276,8 +276,8 @@ namespace ARKimia.Tracking
 
             var labelObj = new GameObject("SymbolLabel");
             labelObj.transform.SetParent(root.transform, false);
-            labelObj.transform.localPosition = new Vector3(0f, 0.042f, 0f);
-            labelObj.transform.localScale = Vector3.one * 0.0045f;
+            labelObj.transform.localPosition = new Vector3(0f, 0.036f, 0f);
+            labelObj.transform.localScale = Vector3.one * 0.0022f;
 
             var textMesh = labelObj.AddComponent<TextMesh>();
             Font symbolFont = sharedDb != null ? sharedDb.LogoUnsurFont : null;
@@ -290,8 +290,8 @@ namespace ARKimia.Tracking
                     labelRenderer.sharedMaterial = symbolFont.material;
                 }
             }
-            textMesh.text = $"{data.Symbol} ({data.AtomicNumber})";
-            textMesh.fontSize = 48;
+            textMesh.text = data.Symbol;
+            textMesh.fontSize = 40;
             textMesh.anchor = TextAnchor.MiddleCenter;
             textMesh.alignment = TextAlignment.Center;
             textMesh.color = Color.white;

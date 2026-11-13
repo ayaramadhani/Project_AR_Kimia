@@ -28,6 +28,11 @@ namespace ARKimia.Gameplay
         private readonly Dictionary<ElementSO, int> activeElements = new Dictionary<ElementSO, int>();
         private readonly List<ElementSO> activeOrder = new List<ElementSO>();
         private readonly HashSet<ElementSO> discoveredElements = new HashSet<ElementSO>();
+        private readonly List<ElementSO> discoveredElementOrder = new List<ElementSO>();
+        private readonly HashSet<CompoundSO> discoveredCompounds = new HashSet<CompoundSO>();
+        private readonly List<CompoundSO> discoveredCompoundOrder = new List<CompoundSO>();
+        private readonly HashSet<ElementSO> unreadElements = new HashSet<ElementSO>();
+        private readonly HashSet<CompoundSO> unreadCompounds = new HashSet<CompoundSO>();
 
         private GameObject activeCompoundInstance;
         private readonly List<ElementTargetHandler> compoundAnchorTargets = new List<ElementTargetHandler>();
@@ -40,6 +45,8 @@ namespace ARKimia.Gameplay
         public event Action<ElementSO, int> OnElementQuantityChanged;
         public event Action<ElementTargetHandler, bool> OnTargetTrackingChanged;
         public event Action<ElementSO> OnElementDiscovered;
+        public event Action<CompoundSO> OnCompoundDiscovered;
+        public event Action OnUnreadStateChanged;
         public event Action<CompoundSO> OnCombinationSuccess;
         public event Action OnCombinationFailed;
         public event Action OnCartReset;
@@ -50,6 +57,10 @@ namespace ARKimia.Gameplay
         public IReadOnlyList<ElementSO> ActiveElementOrder => activeOrder;
         public IReadOnlyCollection<ElementTargetHandler> TrackedTargets => trackedTargets;
         public IReadOnlyCollection<ElementSO> DiscoveredElements => discoveredElements;
+        public IReadOnlyList<ElementSO> DiscoveredElementOrder => discoveredElementOrder;
+        public IReadOnlyCollection<CompoundSO> DiscoveredCompounds => discoveredCompounds;
+        public IReadOnlyList<CompoundSO> DiscoveredCompoundOrder => discoveredCompoundOrder;
+        public bool HasAnyUnread => unreadElements.Count > 0 || unreadCompounds.Count > 0;
         public int TrackedMarkerCount => trackedTargets.Count;
         public int ActiveElementTypeCount => activeOrder.Count;
         public bool IsReactionLocked { get; private set; }
@@ -63,6 +74,12 @@ namespace ARKimia.Gameplay
 
         private void Awake()
         {
+            Screen.orientation = ScreenOrientation.AutoRotation;
+            Screen.autorotateToPortrait = false;
+            Screen.autorotateToPortraitUpsideDown = false;
+            Screen.autorotateToLandscapeLeft = true;
+            Screen.autorotateToLandscapeRight = true;
+
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -89,6 +106,9 @@ namespace ARKimia.Gameplay
         {
             ElementTargetHandler.OnTargetDetected += HandleTargetDetected;
             ElementTargetHandler.OnTargetLost += HandleTargetLost;
+            QuickdropEvents.ElementDropped += HandleQuickdropElementDropped;
+            QuickdropEvents.ElementInfoRequested += HandleElementInfoRequested;
+            QuickdropEvents.CompoundInfoRequested += HandleCompoundInfoRequested;
 
             SyncExistingTargets();
         }
@@ -97,6 +117,60 @@ namespace ARKimia.Gameplay
         {
             ElementTargetHandler.OnTargetDetected -= HandleTargetDetected;
             ElementTargetHandler.OnTargetLost -= HandleTargetLost;
+            QuickdropEvents.ElementDropped -= HandleQuickdropElementDropped;
+            QuickdropEvents.ElementInfoRequested -= HandleElementInfoRequested;
+            QuickdropEvents.CompoundInfoRequested -= HandleCompoundInfoRequested;
+        }
+
+        private void HandleElementInfoRequested(ElementSO element)
+        {
+            MarkElementRead(element);
+        }
+
+        private void HandleCompoundInfoRequested(CompoundSO compound)
+        {
+            MarkCompoundRead(compound);
+        }
+
+        public bool IsElementUnread(ElementSO element)
+        {
+            return element != null && unreadElements.Contains(element);
+        }
+
+        public bool IsCompoundUnread(CompoundSO compound)
+        {
+            return compound != null && unreadCompounds.Contains(compound);
+        }
+
+        public void MarkElementRead(ElementSO element)
+        {
+            if (element != null && unreadElements.Remove(element))
+            {
+                OnUnreadStateChanged?.Invoke();
+            }
+        }
+
+        public void MarkCompoundRead(CompoundSO compound)
+        {
+            if (compound != null && unreadCompounds.Remove(compound))
+            {
+                OnUnreadStateChanged?.Invoke();
+            }
+        }
+
+        private void HandleQuickdropElementDropped(ElementSO element, Vector2 screenPos)
+        {
+            if (element == null || IsReactionLocked)
+                return;
+
+            Vector3? worldPos = null;
+            Camera cam = Camera.main != null ? Camera.main : FindAnyObjectByType<Camera>();
+            if (cam != null)
+            {
+                worldPos = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, fallbackCameraDistance));
+            }
+
+            TryAddFromQuickDrop(element, worldPos);
         }
 
         private void LateUpdate()
@@ -293,6 +367,12 @@ namespace ARKimia.Gameplay
                 }
             }
 
+            DropVisualSpawner dropSpawner = FindAnyObjectByType<DropVisualSpawner>();
+            if (dropSpawner != null)
+            {
+                dropSpawner.SyncElementVisualCount(element, Mathf.Max(0, clampedTotal - effectivePhysical));
+            }
+
             RecalculateElementQuantity(element, forceNotify: false);
         }
 
@@ -377,6 +457,12 @@ namespace ARKimia.Gameplay
             manualExtras.Clear();
             DestroyAllVirtualVisuals();
 
+            DropVisualSpawner dropSpawner = FindAnyObjectByType<DropVisualSpawner>();
+            if (dropSpawner != null)
+            {
+                dropSpawner.ClearAll();
+            }
+
             for (int i = 0; i < trackedTargetOrder.Count; i++)
             {
                 ElementTargetHandler target = trackedTargetOrder[i];
@@ -400,6 +486,50 @@ namespace ARKimia.Gameplay
             }
 
             OnCartReset?.Invoke();
+        }
+
+        public void ZeroAllElementsAndClearModels()
+        {
+            ClearActiveCompoundVisual();
+            UnlockReactionCamera();
+
+            DestroyAllVirtualVisuals();
+
+            DropVisualSpawner dropSpawner = FindAnyObjectByType<DropVisualSpawner>();
+            if (dropSpawner != null)
+            {
+                dropSpawner.ClearAll();
+            }
+
+            var affected = new HashSet<ElementSO>(activeOrder);
+            foreach (ElementSO key in manualExtras.Keys)
+            {
+                affected.Add(key);
+            }
+            for (int i = 0; i < trackedTargetOrder.Count; i++)
+            {
+                ElementTargetHandler t = trackedTargetOrder[i];
+                if (t != null && t.ElementData != null)
+                {
+                    affected.Add(t.ElementData);
+                }
+            }
+
+            manualExtras.Clear();
+            suppressedPhysicalElements.Clear();
+
+            foreach (ElementSO elem in affected)
+            {
+                if (elem == null)
+                    continue;
+
+                int phys = GetEffectivePhysicalMarkerCount(elem);
+                if (phys > 0)
+                {
+                    manualExtras[elem] = -phys;
+                }
+                RecalculateElementQuantity(elem, forceNotify: true);
+            }
         }
 
         public void UnlockReactionCamera()
@@ -445,6 +575,14 @@ namespace ARKimia.Gameplay
                 return null;
 
             return database.EvaluateCombination(activeElements);
+        }
+
+        public bool HasRelatedRecipeForActiveElements()
+        {
+            if (database == null || activeElements.Count < 2)
+                return false;
+
+            return database.HasRelatedCompound(activeElements);
         }
 
         public bool TryCombine(out CompoundSO discoveredCompound)
@@ -493,6 +631,22 @@ namespace ARKimia.Gameplay
                 }
             }
 
+            DropVisualSpawner dropSpawner = FindAnyObjectByType<DropVisualSpawner>();
+            if (dropSpawner != null)
+            {
+                for (int i = 0; i < dropSpawner.SpawnedVisuals.Count; i++)
+                {
+                    GameObject dropGo = dropSpawner.SpawnedVisuals[i];
+                    if (dropGo != null)
+                    {
+                        Vector3 dropPos = dropGo.transform.position;
+                        allObjectPositions.Add(dropPos);
+                        SpawnSmokePuff(dropPos);
+                    }
+                }
+                dropSpawner.ClearAll();
+            }
+
             manualExtras.Clear();
             DestroyAllVirtualVisuals();
 
@@ -518,6 +672,7 @@ namespace ARKimia.Gameplay
             }
 
             OnCartReset?.Invoke();
+            RegisterCompoundDiscovery(compound);
             OnCombinationSuccess?.Invoke(compound);
         }
 
@@ -742,8 +897,8 @@ namespace ARKimia.Gameplay
 
             var labelObj = new GameObject("CompoundLabel");
             labelObj.transform.SetParent(root.transform, false);
-            labelObj.transform.localPosition = new Vector3(0f, 0.052f, 0f);
-            labelObj.transform.localScale = Vector3.one * 0.0042f;
+            labelObj.transform.localPosition = new Vector3(0f, 0.044f, 0f);
+            labelObj.transform.localScale = Vector3.one * 0.0022f;
 
             var textMesh = labelObj.AddComponent<TextMesh>();
             Font titleFont = database != null ? database.TitleFont : null;
@@ -756,8 +911,8 @@ namespace ARKimia.Gameplay
                     labelRenderer.sharedMaterial = titleFont.material;
                 }
             }
-            textMesh.text = $"{compound.ChemicalFormula}\n{compound.CompoundName}";
-            textMesh.fontSize = 44;
+            textMesh.text = compound.ChemicalFormula;
+            textMesh.fontSize = 40;
             textMesh.fontStyle = FontStyle.Normal;
             textMesh.anchor = TextAnchor.MiddleCenter;
             textMesh.alignment = TextAlignment.Center;
@@ -861,9 +1016,21 @@ namespace ARKimia.Gameplay
                 DestroyImmediate(obj);
         }
 
+        public GameObject CreateStandaloneCompoundVisual(CompoundSO compound)
+        {
+            if (compound == null)
+                return null;
+
+            return BuildPlaceholderMolecule(compound, null, Vector3.zero, Quaternion.identity);
+        }
+
         private void EnsureVirtualVisual(ElementSO element, Vector3? requestedWorldPos)
         {
             if (virtualAtomVisuals.TryGetValue(element, out GameObject existing) && existing != null)
+                return;
+
+            DropVisualSpawner dropSpawner = FindAnyObjectByType<DropVisualSpawner>();
+            if (dropSpawner != null && (requestedWorldPos.HasValue || dropSpawner.HasVisualForElement(element)))
                 return;
 
             Vector3 spawnPos;
@@ -945,11 +1112,25 @@ namespace ARKimia.Gameplay
             }
         }
 
-        private void RegisterElementDiscovery(ElementSO element)
+        public void RegisterElementDiscovery(ElementSO element)
         {
             if (element != null && discoveredElements.Add(element))
             {
+                discoveredElementOrder.Add(element);
+                unreadElements.Add(element);
                 OnElementDiscovered?.Invoke(element);
+                OnUnreadStateChanged?.Invoke();
+            }
+        }
+
+        public void RegisterCompoundDiscovery(CompoundSO compound)
+        {
+            if (compound != null && discoveredCompounds.Add(compound))
+            {
+                discoveredCompoundOrder.Add(compound);
+                unreadCompounds.Add(compound);
+                OnCompoundDiscovered?.Invoke(compound);
+                OnUnreadStateChanged?.Invoke();
             }
         }
 

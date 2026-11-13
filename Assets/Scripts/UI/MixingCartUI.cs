@@ -23,6 +23,7 @@ namespace ARKimia.UI
         [Header("Frame 52 - Expanded")]
         [SerializeField] private GameObject frame52ExpandedRoot;
         [SerializeField] private Button minimizeButton;
+        [SerializeField] private Button resetButton;
         [SerializeField] private RectTransform rowsContainer;
         [SerializeField] private MixingCartRowUI rowTemplate;
 
@@ -41,13 +42,24 @@ namespace ARKimia.UI
         [SerializeField] private Text popupDescriptionText;
         [SerializeField] private Button popupContinueButton;
 
+        [Header("New Element Toast")]
+        [SerializeField] private GameObject toastRoot;
+        [SerializeField] private Text toastText;
+        [SerializeField] private float toastDuration = 2.0f;
+
         private readonly Dictionary<ElementSO, MixingCartRowUI> activeRows = new Dictionary<ElementSO, MixingCartRowUI>();
+        private readonly List<ElementSO> currentToastBatch = new List<ElementSO>();
+        private float toastTimer;
         private ElementCombinationManager boundManager;
         private bool isMinimized;
         private Coroutine glowPulseCoroutine;
         private Coroutine panelPopCoroutine;
         private Rect lastSafeArea;
         private Vector2Int lastScreenSize;
+
+        public GameObject ToastRoot => toastRoot;
+        public Text ToastText => toastText;
+        public Button ResetButton => resetButton;
 
         public void ConfigureReferences(
             RectTransform safeArea,
@@ -69,7 +81,10 @@ namespace ARKimia.UI
             Text titleText,
             Text compoundText,
             Text descText,
-            Button continueBtn)
+            Button continueBtn,
+            Button resetBtn = null,
+            GameObject toastObj = null,
+            Text toastTxt = null)
         {
             safeAreaRect = safeArea;
             frame49MinimizedRoot = frame49Root;
@@ -78,6 +93,7 @@ namespace ARKimia.UI
             badgeCountText = badgeText;
             frame52ExpandedRoot = frame52Root;
             minimizeButton = minimizeBtn;
+            resetButton = resetBtn;
             rowsContainer = container;
             rowTemplate = template;
             combineButtonRoot = combineRoot;
@@ -91,6 +107,8 @@ namespace ARKimia.UI
             popupCompoundText = compoundText;
             popupDescriptionText = descText;
             popupContinueButton = continueBtn;
+            toastRoot = toastObj;
+            toastText = toastTxt;
         }
 
         private void Awake()
@@ -110,6 +128,11 @@ namespace ARKimia.UI
                 minimizeButton.onClick.AddListener(HandleMinimizeClicked);
             }
 
+            if (resetButton != null)
+            {
+                resetButton.onClick.AddListener(HandleResetClicked);
+            }
+
             if (combineButton != null)
             {
                 combineButton.onClick.AddListener(HandleCombineClicked);
@@ -123,6 +146,11 @@ namespace ARKimia.UI
             if (discoveryPopupRoot != null)
             {
                 discoveryPopupRoot.SetActive(false);
+            }
+
+            if (toastRoot != null)
+            {
+                toastRoot.SetActive(false);
             }
 
             ApplySafeAreaIfChanged(force: true);
@@ -152,6 +180,25 @@ namespace ARKimia.UI
         private void Update()
         {
             ApplySafeAreaIfChanged(force: false);
+
+            if (toastRoot != null && toastRoot.activeSelf)
+            {
+                toastTimer -= Time.unscaledDeltaTime;
+                if (toastTimer <= 0f)
+                {
+                    HideToastImmediate();
+                }
+            }
+        }
+
+        public void HideToastImmediate()
+        {
+            toastTimer = 0f;
+            currentToastBatch.Clear();
+            if (toastRoot != null)
+            {
+                toastRoot.SetActive(false);
+            }
         }
 
         private void BindToManager()
@@ -166,6 +213,7 @@ namespace ARKimia.UI
             UnbindFromManager();
             boundManager = target;
             boundManager.OnElementQuantityChanged += HandleElementQuantityChanged;
+            boundManager.OnElementDiscovered += HandleElementDiscovered;
             boundManager.OnCombinationSuccess += HandleCombinationSuccess;
             boundManager.OnCartReset += HandleCartReset;
             boundManager.OnReactionLockChanged += HandleReactionLockChanged;
@@ -177,10 +225,34 @@ namespace ARKimia.UI
                 return;
 
             boundManager.OnElementQuantityChanged -= HandleElementQuantityChanged;
+            boundManager.OnElementDiscovered -= HandleElementDiscovered;
             boundManager.OnCombinationSuccess -= HandleCombinationSuccess;
             boundManager.OnCartReset -= HandleCartReset;
             boundManager.OnReactionLockChanged -= HandleReactionLockChanged;
             boundManager = null;
+        }
+
+        private void HandleElementDiscovered(ElementSO element)
+        {
+            if (element == null || toastRoot == null || toastText == null)
+                return;
+
+            if (!currentToastBatch.Contains(element))
+            {
+                currentToastBatch.Add(element);
+            }
+
+            if (currentToastBatch.Count == 1)
+            {
+                toastText.text = $"✨ Unsur Baru: {element.ElementName}";
+            }
+            else
+            {
+                toastText.text = $"✨ {currentToastBatch.Count} Unsur Baru Ditemukan!";
+            }
+
+            toastTimer = toastDuration;
+            toastRoot.SetActive(true);
         }
 
         private void SyncAllFromManager()
@@ -279,6 +351,14 @@ namespace ARKimia.UI
             }
         }
 
+        private void HandleResetClicked()
+        {
+            if (boundManager != null)
+            {
+                boundManager.ZeroAllElementsAndClearModels();
+            }
+        }
+
         private void HandleCartReset()
         {
             ClearAllRowInstances();
@@ -303,7 +383,7 @@ namespace ARKimia.UI
 
             if (popupCompoundText != null)
             {
-                string prettyFormula = FormatFormulaRichText(compound.ChemicalFormula, 30);
+                string prettyFormula = FormatFormulaRichText(compound.ChemicalFormula, 24);
                 popupCompoundText.text = $"{prettyFormula}  —  {compound.CompoundName}";
             }
 
@@ -327,6 +407,7 @@ namespace ARKimia.UI
             if (activeRows.Count == 0)
                 return;
 
+            SyncPanelPositions(fromExpandedToMinimized: true);
             isMinimized = true;
             RefreshViewStates(animateExpand: false);
         }
@@ -336,8 +417,35 @@ namespace ARKimia.UI
             if (activeRows.Count == 0)
                 return;
 
+            var draggable = frame49MinimizedRoot != null ? frame49MinimizedRoot.GetComponent<UIDraggablePanel>() : null;
+            if (draggable != null && draggable.IsDragging)
+                return;
+
+            SyncPanelPositions(fromExpandedToMinimized: false);
             isMinimized = false;
             RefreshViewStates(animateExpand: true);
+        }
+
+        private void SyncPanelPositions(bool fromExpandedToMinimized)
+        {
+            if (frame49MinimizedRoot == null || frame52ExpandedRoot == null)
+                return;
+
+            var f49Rt = frame49MinimizedRoot.GetComponent<RectTransform>();
+            var f52Rt = frame52ExpandedRoot.GetComponent<RectTransform>();
+            if (f49Rt == null || f52Rt == null)
+                return;
+
+            if (fromExpandedToMinimized)
+            {
+                f49Rt.anchoredPosition = f52Rt.anchoredPosition;
+                frame49MinimizedRoot.GetComponent<UIDraggablePanel>()?.ClampToBoundary();
+            }
+            else
+            {
+                f52Rt.anchoredPosition = f49Rt.anchoredPosition;
+                frame52ExpandedRoot.GetComponent<UIDraggablePanel>()?.ClampToBoundary();
+            }
         }
 
         private void HandleCombineClicked()
@@ -396,25 +504,27 @@ namespace ARKimia.UI
                 }
             }
 
-            if (combineButtonRoot != null)
-            {
-                combineButtonRoot.SetActive(count > 0);
-            }
-
             RefreshCombineButtonState();
         }
 
         private void RefreshCombineButtonState()
         {
-            if (combineButton == null || combineButtonRoot == null || !combineButtonRoot.activeSelf)
+            if (combineButton == null || combineButtonRoot == null)
+                return;
+
+            bool hasRelatedRecipe = boundManager != null && !boundManager.IsReactionLocked && boundManager.HasRelatedRecipeForActiveElements();
+            CompoundSO validMatch = boundManager != null && !boundManager.IsReactionLocked
+                ? boundManager.EvaluateCurrentCombination()
+                : null;
+
+            bool shouldShowButton = activeRows.Count > 0 && (hasRelatedRecipe || validMatch != null);
+            combineButtonRoot.SetActive(shouldShowButton);
+
+            if (!shouldShowButton)
             {
                 StopGlowPulse();
                 return;
             }
-
-            CompoundSO validMatch = boundManager != null && !boundManager.IsReactionLocked
-                ? boundManager.EvaluateCurrentCombination()
-                : null;
 
             bool isReady = validMatch != null;
             combineButton.interactable = isReady;

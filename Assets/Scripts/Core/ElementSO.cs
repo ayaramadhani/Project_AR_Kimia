@@ -31,6 +31,10 @@ namespace ARKimia.Data
         public Sprite Icon => icon;
         public string Description => description;
         public string FunFact => funFact;
+
+        // Compatibility aliases for Quickdrop / Sidebar scripts
+        public string displayName => elementName;
+        public GameObject markerPrefab => bohrModelPrefab;
     }
 }
 

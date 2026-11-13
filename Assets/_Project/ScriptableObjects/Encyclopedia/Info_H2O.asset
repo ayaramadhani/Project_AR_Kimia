@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6aa25fc53d2f1704ca7b3aea8fa3c92c, type: 3}
+  m_Name: Info_H2O
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
+  key: H2O
+  category: SENYAWA
+  subtitle: Rumus H2O | Bengkok, sudut ikatan sekitar 104,5 derajat
+  description: Air tersusun dari dua atom hidrogen dan satu atom oksigen yang terikat
+    secara kovalen. Molekulnya bersifat polar sehingga air dapat melarutkan banyak
+    zat dan menjadi pelarut penting bagi kehidupan.
+  funFact: Air termasuk sedikit zat yang lebih ringan saat membeku; itulah sebabnya
+    es mengapung di atas air.
