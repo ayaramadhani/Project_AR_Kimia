@@ -9,12 +9,31 @@ public class ARScreenshotController : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private GameObject leftSidebar;
+    [SerializeField] private GameObject[] additionalHudRoots;
     [SerializeField] private GameObject screenshotPanel;
     [SerializeField] private RawImage screenshotPreview;
     [SerializeField] private AspectRatioFitter aspectRatioFitter;
 
     private Texture2D currentScreenshot;
     private bool isCapturing = false;
+    private bool[] previousHudActiveStates;
+    private bool previousLeftSidebarActive = true;
+
+    public GameObject ScreenshotPanel => screenshotPanel;
+
+    public void ConfigureReferences(
+        GameObject sidebar,
+        GameObject[] extraHudRoots,
+        GameObject panel,
+        RawImage preview,
+        AspectRatioFitter fitter)
+    {
+        leftSidebar = sidebar;
+        additionalHudRoots = extraHudRoots;
+        screenshotPanel = panel;
+        screenshotPreview = preview;
+        aspectRatioFitter = fitter;
+    }
 
     // =====================================
     // 1. MENGAMBIL SCREENSHOT
@@ -32,9 +51,29 @@ public class ARScreenshotController : MonoBehaviour
     {
         isCapturing = true;
 
-        // Sembunyikan UI sementara.
-        leftSidebar.SetActive(false);
-        screenshotPanel.SetActive(false);
+        // Sembunyikan UI sementara, simpan status aktif tiap panel.
+        if (leftSidebar != null)
+        {
+            previousLeftSidebarActive = leftSidebar.activeSelf;
+            leftSidebar.SetActive(false);
+        }
+
+        if (additionalHudRoots != null && additionalHudRoots.Length > 0)
+        {
+            if (previousHudActiveStates == null || previousHudActiveStates.Length != additionalHudRoots.Length)
+                previousHudActiveStates = new bool[additionalHudRoots.Length];
+
+            for (int i = 0; i < additionalHudRoots.Length; i++)
+            {
+                GameObject hud = additionalHudRoots[i];
+                previousHudActiveStates[i] = hud != null && hud.activeSelf;
+                if (hud != null)
+                    hud.SetActive(false);
+            }
+        }
+
+        if (screenshotPanel != null)
+            screenshotPanel.SetActive(false);
 
         // Tunggu sampai frame selesai dirender.
         yield return new WaitForEndOfFrame();
@@ -43,9 +82,9 @@ public class ARScreenshotController : MonoBehaviour
         Texture2D newScreenshot =
             ScreenCapture.CaptureScreenshotAsTexture();
 
-        // Tampilkan kembali UI.
-        leftSidebar.SetActive(true);
-        screenshotPanel.SetActive(true);
+        RestoreHudVisibility();
+        if (screenshotPanel != null)
+            screenshotPanel.SetActive(true);
 
         // Hapus gambar sebelumnya.
         if (currentScreenshot != null)
@@ -56,10 +95,11 @@ public class ARScreenshotController : MonoBehaviour
         currentScreenshot = newScreenshot;
 
         // Tampilkan screenshot di preview.
-        screenshotPreview.texture = currentScreenshot;
+        if (screenshotPreview != null)
+            screenshotPreview.texture = currentScreenshot;
 
         // Sesuaikan rasio gambar.
-        if (aspectRatioFitter != null)
+        if (aspectRatioFitter != null && currentScreenshot != null)
         {
             aspectRatioFitter.aspectRatio =
                 (float)currentScreenshot.width /
@@ -70,6 +110,22 @@ public class ARScreenshotController : MonoBehaviour
         }
 
         isCapturing = false;
+    }
+
+    private void RestoreHudVisibility()
+    {
+        if (leftSidebar != null)
+            leftSidebar.SetActive(previousLeftSidebarActive);
+
+        if (additionalHudRoots != null && previousHudActiveStates != null)
+        {
+            int count = Mathf.Min(additionalHudRoots.Length, previousHudActiveStates.Length);
+            for (int i = 0; i < count; i++)
+            {
+                if (additionalHudRoots[i] != null)
+                    additionalHudRoots[i].SetActive(previousHudActiveStates[i]);
+            }
+        }
     }
 
     // =====================================
@@ -172,10 +228,12 @@ public void ShareScreenshot()
 public void CloseScreenshotPanel()
 {
     // Menutup halaman screenshot
-    screenshotPanel.SetActive(false);
+    if (screenshotPanel != null)
+        screenshotPanel.SetActive(false);
 
-    // Menampilkan kembali sidebar AR
-    leftSidebar.SetActive(true);
+    // Menampilkan kembali sidebar AR bila sebelumnya disembunyikan
+    if (leftSidebar != null)
+        leftSidebar.SetActive(true);
 
     Debug.Log("Kembali ke halaman AR Camera.");
 }

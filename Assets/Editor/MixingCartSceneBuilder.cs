@@ -83,7 +83,12 @@ namespace ARKimia.EditorTools
                 PrefabAssetPath,
                 InteractionMode.AutomatedAction);
 
-            BuildEncyclopediaPopupCanvas(roundedRect, btnCloseX != null ? btnCloseX : circleSprite);
+            GameObject oldPopupCanvas = GameObject.Find("EncyclopediaPopupCanvas");
+            if (oldPopupCanvas != null)
+            {
+                Object.DestroyImmediate(oldPopupCanvas);
+            }
+
             EnsureDropVisualSpawner();
 
             // Hide debug IMGUI overlay so it does not overlap HUD in Play Mode.
@@ -501,6 +506,25 @@ namespace ARKimia.EditorTools
                 toastRt.gameObject,
                 toastTxt);
 
+            Transform rightSidebarTf = safeArea.Find("ElementSidebar");
+            Transform rightToggleTf = safeArea.Find("SidebarToggleButton");
+            EncyclopediaAndLeftUpBuilder.IntegrateIntoCanvas(
+                safeArea,
+                roundedRect,
+                circleSprite,
+                closeX,
+                cartUi,
+                new[]
+                {
+                    frame49Root.gameObject,
+                    frame52Root.gameObject,
+                    gabungRoot.gameObject,
+                    popupRoot.gameObject,
+                    toastRt.gameObject,
+                    rightSidebarTf != null ? rightSidebarTf.gameObject : null,
+                    rightToggleTf != null ? rightToggleTf.gameObject : null
+                });
+
             return canvasGo;
         }
 
@@ -812,153 +836,10 @@ namespace ARKimia.EditorTools
             sidebarCollapse.toggleButton = toggleBtn;
             sidebarCollapse.arrowIcon = arrowIconRt;
             sidebarCollapse.openInset = 12f;
-            sidebarCollapse.closedInset = 16f;
+            sidebarCollapse.closedInset = 64f;
+            sidebarCollapse.closedTopInset = 24f;
             sidebarCollapse.topInset = 12f;
             sidebarCollapse.startCollapsed = false;
-        }
-
-        private static void BuildEncyclopediaPopupCanvas(Sprite roundedRect, Sprite closeX)
-        {
-            List<EncyclopediaEntry> entries = EncyclopediaDataGenerator.Generate();
-
-            GameObject existing = GameObject.Find("EncyclopediaPopupCanvas");
-            if (existing != null)
-            {
-                Object.DestroyImmediate(existing);
-            }
-
-            TMP_FontAsset jotiSdf = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Art/Fonts/Joti_One/JotiOne-Regular SDF.asset");
-            TMP_FontAsset markoSdf = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Art/Fonts/Marko_One/MarkoOne-Regular SDF.asset");
-
-            var canvasGo = new GameObject("EncyclopediaPopupCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            var canvas = canvasGo.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 100;
-
-            var scaler = canvasGo.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-
-            RectTransform overlayRt = CreateRect("Overlay", canvasGo.transform);
-            StretchFull(overlayRt, 0f);
-            var overlayImg = overlayRt.gameObject.AddComponent<Image>();
-            overlayImg.color = new Color(0.02f, 0.03f, 0.08f, 0.72f);
-
-            RectTransform cardRt = CreateRect("Card", overlayRt);
-            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
-            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.pivot = new Vector2(0.5f, 0.5f);
-            cardRt.anchoredPosition = Vector2.zero;
-            cardRt.sizeDelta = new Vector2(720f, 460f);
-
-            var cardBorderImg = cardRt.gameObject.AddComponent<Image>();
-            cardBorderImg.sprite = roundedRect;
-            cardBorderImg.type = Image.Type.Sliced;
-            cardBorderImg.color = Hex("#2D2C5B");
-
-            RectTransform cardInnerRt = CreateRect("CardInner", cardRt);
-            StretchFull(cardInnerRt, 10f);
-            var cardInnerImg = cardInnerRt.gameObject.AddComponent<Image>();
-            cardInnerImg.sprite = roundedRect;
-            cardInnerImg.type = Image.Type.Sliced;
-            cardInnerImg.color = Hex("#3D3C66");
-
-            TextMeshProUGUI catTxt = CreateTmpText("CategoryText", cardInnerRt, jotiSdf, "UNSUR", 20f, new Color32(255, 181, 46, 255), TextAlignmentOptions.Left);
-            catTxt.rectTransform.anchorMin = new Vector2(0f, 1f);
-            catTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
-            catTxt.rectTransform.pivot = new Vector2(0f, 1f);
-            catTxt.rectTransform.offsetMin = new Vector2(148f, -48f);
-            catTxt.rectTransform.offsetMax = new Vector2(-64f, -18f);
-
-            RectTransform symBoxRt = CreateRect("SymbolBadge", cardInnerRt);
-            symBoxRt.anchorMin = new Vector2(0f, 1f);
-            symBoxRt.anchorMax = new Vector2(0f, 1f);
-            symBoxRt.pivot = new Vector2(0f, 1f);
-            symBoxRt.anchoredPosition = new Vector2(24f, -20f);
-            symBoxRt.sizeDelta = new Vector2(104f, 104f);
-            var symBoxImg = symBoxRt.gameObject.AddComponent<Image>();
-            symBoxImg.sprite = roundedRect;
-            symBoxImg.type = Image.Type.Sliced;
-            symBoxImg.color = Hex("#F9AD0A");
-
-            TextMeshProUGUI symTxt = CreateTmpText("SymbolText", symBoxRt, markoSdf, "H", 54f, Hex("#000610"), TextAlignmentOptions.Center);
-            StretchFull(symTxt.rectTransform, 6f);
-
-            TextMeshProUGUI nameTxt = CreateTmpText("NameText", cardInnerRt, jotiSdf, "Hidrogen", 36f, Hex("#FFEFDD"), TextAlignmentOptions.Left);
-            nameTxt.rectTransform.anchorMin = new Vector2(0f, 1f);
-            nameTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
-            nameTxt.rectTransform.pivot = new Vector2(0f, 1f);
-            nameTxt.rectTransform.offsetMin = new Vector2(148f, -92f);
-            nameTxt.rectTransform.offsetMax = new Vector2(-64f, -46f);
-
-            TextMeshProUGUI infoTxt = CreateTmpText("InfoText", cardInnerRt, jotiSdf, "Nomor atom 1", 18f, new Color32(255, 239, 221, 200), TextAlignmentOptions.Left);
-            infoTxt.rectTransform.anchorMin = new Vector2(0f, 1f);
-            infoTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
-            infoTxt.rectTransform.pivot = new Vector2(0f, 1f);
-            infoTxt.rectTransform.offsetMin = new Vector2(148f, -124f);
-            infoTxt.rectTransform.offsetMax = new Vector2(-24f, -94f);
-
-            RectTransform accentRt = CreateRect("AccentLine", cardInnerRt);
-            accentRt.anchorMin = new Vector2(0f, 1f);
-            accentRt.anchorMax = new Vector2(1f, 1f);
-            accentRt.pivot = new Vector2(0.5f, 1f);
-            accentRt.offsetMin = new Vector2(24f, -142f);
-            accentRt.offsetMax = new Vector2(-24f, -138f);
-            var accentImg = accentRt.gameObject.AddComponent<Image>();
-            accentImg.color = new Color32(255, 181, 46, 220);
-
-            TextMeshProUGUI descTxt = CreateTmpText("DescText", cardInnerRt, jotiSdf, "Deskripsi", 21f, Color.white, TextAlignmentOptions.TopLeft);
-            descTxt.textWrappingMode = TextWrappingModes.Normal;
-            descTxt.rectTransform.anchorMin = new Vector2(0f, 0f);
-            descTxt.rectTransform.anchorMax = new Vector2(1f, 1f);
-            descTxt.rectTransform.offsetMin = new Vector2(26f, 128f);
-            descTxt.rectTransform.offsetMax = new Vector2(-26f, -154f);
-
-            RectTransform funBoxRt = CreateRect("FunFactBox", cardInnerRt);
-            funBoxRt.anchorMin = new Vector2(0f, 0f);
-            funBoxRt.anchorMax = new Vector2(1f, 0f);
-            funBoxRt.pivot = new Vector2(0.5f, 0f);
-            funBoxRt.offsetMin = new Vector2(24f, 20f);
-            funBoxRt.offsetMax = new Vector2(-24f, 114f);
-            var funBoxImg = funBoxRt.gameObject.AddComponent<Image>();
-            funBoxImg.sprite = roundedRect;
-            funBoxImg.type = Image.Type.Sliced;
-            funBoxImg.color = new Color(1f, 0.71f, 0.18f, 0.16f);
-
-            TextMeshProUGUI funTxt = CreateTmpText("FunFactText", funBoxRt, jotiSdf, "TAHUKAH KAMU?", 18f, Hex("#FFEFDD"), TextAlignmentOptions.TopLeft);
-            funTxt.textWrappingMode = TextWrappingModes.Normal;
-            StretchFull(funTxt.rectTransform, 12f);
-
-            RectTransform closeBtnRt = CreateRect("CloseButton", cardRt);
-            closeBtnRt.anchorMin = new Vector2(1f, 1f);
-            closeBtnRt.anchorMax = new Vector2(1f, 1f);
-            closeBtnRt.pivot = new Vector2(0.5f, 0.5f);
-            closeBtnRt.anchoredPosition = new Vector2(-6f, -6f);
-            closeBtnRt.sizeDelta = new Vector2(48f, 48f);
-            var closeImg = closeBtnRt.gameObject.AddComponent<Image>();
-            closeImg.sprite = closeX;
-            closeImg.color = Color.white;
-            closeImg.preserveAspect = true;
-            var closeBtn = closeBtnRt.gameObject.AddComponent<Button>();
-            closeBtn.targetGraphic = closeImg;
-
-            overlayRt.gameObject.SetActive(false);
-
-            var popup = canvasGo.AddComponent<EncyclopediaPopup>();
-            popup.panel = overlayRt.gameObject;
-            popup.card = cardRt;
-            popup.categoryText = catTxt;
-            popup.symbolText = symTxt;
-            popup.nameText = nameTxt;
-            popup.infoText = infoTxt;
-            popup.descText = descTxt;
-            popup.funFactText = funTxt;
-            popup.closeButton = closeBtn;
-            popup.accentLine = accentImg;
-            popup.funFactBox = funBoxRt.gameObject;
-            popup.entries = entries;
         }
 
         private static void EnsureDropVisualSpawner()

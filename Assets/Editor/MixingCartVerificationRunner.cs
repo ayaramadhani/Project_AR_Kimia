@@ -65,6 +65,30 @@ namespace ARKimia.EditorTools
             manager.ResetCart();
             Assert(!frame49.activeSelf && !frame52.activeSelf && !gabungRoot.activeSelf, "Case 1 failed: Panels must start hidden.");
 
+            EncyclopediaBookUI bookUi = safeArea.GetComponentInChildren<EncyclopediaBookUI>(true);
+            Assert(bookUi != null && !bookUi.PanelRoot.activeSelf, "Case 1b failed: EncyclopediaBookUI must exist and start closed.");
+            var bookAwake = typeof(EncyclopediaBookUI).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            var bookOnEnable = typeof(EncyclopediaBookUI).GetMethod("OnEnable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            bookAwake?.Invoke(bookUi, null);
+            bookOnEnable?.Invoke(bookUi, null);
+            bookUi.EnsureInitialized();
+
+            Assert(bookUi.SpawnedSlots.Count == 15, $"Case 1c failed: Expected 15 index slots (10 elements + 5 compounds), got {bookUi.SpawnedSlots.Count}.");
+            for (int i = 0; i < bookUi.SpawnedSlots.Count; i++)
+            {
+                EncyclopediaBookSlotUI slot = bookUi.SpawnedSlots[i];
+                Assert(!slot.IsUnlocked && !slot.IsSelected && slot.LabelText.text == "???",
+                    $"Case 1d failed: Slot {i} must start locked as '???'.");
+            }
+
+            bookUi.Open(EncyclopediaBookUI.BookTab.Index);
+            Assert(bookUi.PanelRoot.activeSelf && bookUi.CornerRibbonText.text == "Index" && bookUi.RightPromptRoot.activeSelf && !bookUi.RightDetailRoot.activeSelf,
+                "Case 1e failed: Opening Encyclopedia initially must show Index prompt on right page.");
+            bookUi.SpawnedSlots[0].SlotButton.onClick.Invoke();
+            Assert(bookUi.SelectedSlot == null && !bookUi.RightDetailRoot.activeSelf,
+                "Case 1f failed: Clicking locked slot must not select it.");
+            bookUi.Close();
+
             // 2. 0 -> 1 auto-expand via QuickDrop
             bool added = manager.TryAddFromQuickDrop(elemO);
             Assert(added && manager.GetQuantity(elemO) == 1, "Case 2 failed: QuickDrop O should set quantity 1.");
@@ -263,28 +287,23 @@ namespace ARKimia.EditorTools
             drag52.ClampToBoundary();
             drag49.ClampToBoundary();
 
-            // 13. Right Sidebar (ElementSidebarUI, SidebarCollapse, Quickdrop, EncyclopediaPopup) Integration
+            // 13. Right Sidebar (ElementSidebarUI, SidebarCollapse, Quickdrop, EncyclopediaBookUI) Integration
             ElementSidebarUI rightSidebar = safeArea.GetComponentInChildren<ElementSidebarUI>(true);
             SidebarCollapse sidebarCollapse = safeArea.GetComponentInChildren<SidebarCollapse>(true);
-            EncyclopediaPopup encyclopedia = UnityEngine.Object.FindAnyObjectByType<EncyclopediaPopup>();
             DropVisualSpawner dropSpawner = UnityEngine.Object.FindAnyObjectByType<DropVisualSpawner>();
 
             Assert(rightSidebar != null && sidebarCollapse != null, "Case 13a failed: Right Sidebar (ElementSidebarUI + SidebarCollapse) missing in SafeArea.");
-            Assert(encyclopedia != null, "Case 13b failed: EncyclopediaPopup missing in scene.");
+            Assert(UnityEngine.Object.FindAnyObjectByType<EncyclopediaPopup>() == null, "Case 13b failed: Old EncyclopediaPopup should be replaced by EncyclopediaBookUI in ARScene.");
             Assert(dropSpawner != null, "Case 13c failed: DropVisualSpawner missing in scene.");
 
             var sidebarStart = typeof(ElementSidebarUI).GetMethod("Start", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             var collapseAwake = typeof(SidebarCollapse).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             var collapseStart = typeof(SidebarCollapse).GetMethod("Start", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var encAwake = typeof(EncyclopediaPopup).GetMethod("Awake", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            var encOnEnable = typeof(EncyclopediaPopup).GetMethod("OnEnable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             var spawnerOnEnable = typeof(DropVisualSpawner).GetMethod("OnEnable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
 
             collapseAwake?.Invoke(sidebarCollapse, null);
             collapseStart?.Invoke(sidebarCollapse, null);
             sidebarStart?.Invoke(rightSidebar, null);
-            encAwake?.Invoke(encyclopedia, null);
-            encOnEnable?.Invoke(encyclopedia, null);
             spawnerOnEnable?.Invoke(dropSpawner, null);
 
             // Discovered elements (H, O, Na, Cl from earlier cases) should appear in Unsur tab
@@ -313,18 +332,25 @@ namespace ARKimia.EditorTools
                 "Case 13g failed: Dropping element O from Right Sidebar must add O=1 to Left Sidebar MixingCart.");
             manager.ResetCart();
 
-            // Long-press info request -> opens EncyclopediaPopup
+            // Long-press/tap info request -> opens EncyclopediaBookUI directly on Tab Index with item selected
             QuickdropEvents.RaiseElementInfoRequested(elemO);
-            Assert(encyclopedia.panel.activeSelf && encyclopedia.categoryText.text == "UNSUR" && encyclopedia.symbolText.text == "O",
-                "Case 13h failed: Long-press on element O must open EncyclopediaPopup with Oksigen info.");
-            encyclopedia.Close();
-            Assert(!encyclopedia.panel.activeSelf, "Case 13i failed: Closing EncyclopediaPopup must hide overlay panel.");
+            Assert(bookUi.PanelRoot.activeSelf && bookUi.CurrentTab == EncyclopediaBookUI.BookTab.Index &&
+                   bookUi.SelectedSlot != null && bookUi.SelectedSlot.Element == elemO &&
+                   bookUi.SelectedSlot.IsSelected && bookUi.RightDetailRoot.activeSelf &&
+                   bookUi.RightDetailTitleText.text == elemO.ElementName,
+                "Case 13h failed: Tapping element O in Quickdrop must open EncyclopediaBookUI with Oksigen selected.");
+            bookUi.Close();
+            Assert(!bookUi.PanelRoot.activeSelf, "Case 13i failed: Closing EncyclopediaBookUI must hide overlay.");
 
             // SidebarCollapse toggle test
             Assert(!sidebarCollapse.IsCollapsed, "Case 13j failed: Right Sidebar should start expanded.");
             sidebarCollapse.SetCollapsed(true, instant: true);
-            Assert(sidebarCollapse.IsCollapsed && Mathf.Abs(sidebarCollapse.arrowIcon.localEulerAngles.z - 180f) < 1f,
-                "Case 13k failed: Collapsing Right Sidebar must slide sidebar and rotate arrow icon 180 degrees.");
+            RectTransform toggleBtnRt = sidebarCollapse.toggleButton.GetComponent<RectTransform>();
+            Assert(sidebarCollapse.IsCollapsed &&
+                   Mathf.Abs(sidebarCollapse.arrowIcon.localEulerAngles.z - 180f) < 1f &&
+                   toggleBtnRt.anchoredPosition.x <= -60f &&
+                   toggleBtnRt.anchoredPosition.y <= -20f,
+                $"Case 13k failed: Collapsing Right Sidebar must slide sidebar, rotate arrow icon 180 degrees, and keep toggle inset from rounded screen corner (pos={toggleBtnRt.anchoredPosition}).");
             sidebarCollapse.SetCollapsed(false, instant: true);
 
             // 14. Reset button zeroes everything; unrelated pair hides Gabungkan; unread badge clears on read
@@ -345,6 +371,117 @@ namespace ARKimia.EditorTools
             manager.RegisterElementDiscovery(elemO);
             manager.MarkElementRead(elemO);
             Assert(!manager.IsElementUnread(elemO), "Case 14e failed: MarkElementRead must clear unread flag.");
+
+            // 15. Cross-Panel Integration: LeftUpSidebar + Screenshot + Exit + Encyclopedia Book states, tabs & independent scrolls
+            Transform leftUpTf = safeArea.Find("LeftUpSidebar");
+            Assert(leftUpTf != null, "Case 15a failed: LeftUpSidebar missing in SafeArea.");
+            Button btnLogout = leftUpTf.Find("ButtonLogout")?.GetComponent<Button>();
+            Button btnCamera = leftUpTf.Find("ButtonCamera")?.GetComponent<Button>();
+            Button btnEnc = leftUpTf.Find("ButtonEncyclopedia")?.GetComponent<Button>();
+            Assert(btnLogout != null && btnCamera != null && btnEnc != null, "Case 15a failed: LeftUpSidebar buttons missing.");
+            Assert(btnCamera.onClick.GetPersistentEventCount() >= 1 && btnCamera.onClick.GetPersistentMethodName(0) == "TakeScreenshot",
+                "Case 15b failed: ButtonCamera must persistently wire ARScreenshotController.TakeScreenshot.");
+            Assert(btnEnc.onClick.GetPersistentEventCount() >= 1 && btnEnc.onClick.GetPersistentMethodName(0) == "OpenIndex",
+                "Case 15b failed: ButtonEncyclopedia must persistently wire EncyclopediaBookUI.OpenIndex.");
+            Assert(btnLogout.onClick.GetPersistentEventCount() >= 1 && btnLogout.onClick.GetPersistentMethodName(0) == "ShowPopup",
+                "Case 15b failed: ButtonLogout must persistently wire ExitConfirmation.ShowPopup.");
+
+            ARScreenshotController screenshotCtrl = safeArea.GetComponentInChildren<ARScreenshotController>(true);
+            ExitConfirmation exitCtrl = UnityEngine.Object.FindAnyObjectByType<ExitConfirmation>();
+            Assert(screenshotCtrl != null && !screenshotCtrl.ScreenshotPanel.activeSelf, "Case 15c failed: ARScreenshotController panel must start hidden.");
+            Assert(exitCtrl != null && !exitCtrl.PopupPanel.activeSelf, "Case 15c failed: ExitConfirmation popup must start hidden.");
+            exitCtrl.ShowPopup();
+            Assert(exitCtrl.PopupPanel.activeSelf, "Case 15c failed: ShowPopup must open exit confirmation.");
+            exitCtrl.HidePopup();
+            Assert(!exitCtrl.PopupPanel.activeSelf, "Case 15c failed: HidePopup must close exit confirmation.");
+
+            // Discovered entries survive stage Reset; locked ones stay ???; slot selection & right-page update work
+            bookUi.Open(EncyclopediaBookUI.BookTab.Index);
+            EncyclopediaBookSlotUI slotH2O = null;
+            EncyclopediaBookSlotUI slotFe = null;
+            for (int i = 0; i < bookUi.SpawnedSlots.Count; i++)
+            {
+                var s = bookUi.SpawnedSlots[i];
+                if (s.EntryKey == "H2O") slotH2O = s;
+                if (s.EntryKey == "Fe") slotFe = s;
+            }
+            Assert(slotH2O != null && slotH2O.IsUnlocked && slotH2O.LabelText.text.Contains("<sub>2</sub>"),
+                "Case 15d failed: H2O discovered before Reset must remain unlocked as 'H<sub>2</sub>O' in Encyclopedia.");
+            Assert(slotFe != null && !slotFe.IsUnlocked && slotFe.LabelText.text == "???",
+                "Case 15d failed: Undiscovered Fe must remain locked as '???'.");
+
+            slotH2O.SlotButton.onClick.Invoke();
+            Assert(bookUi.SelectedSlot == slotH2O && slotH2O.IsSelected && slotH2O.FrameImage.sprite.name == "slot_selected",
+                "Case 15e failed: Clicking unlocked H2O must select slot with selected border sprite.");
+            Assert(bookUi.RightDetailRoot.activeSelf && bookUi.RightDetailTitleText.text == "Air" && !string.IsNullOrEmpty(bookUi.RightDetailBodyText.text),
+                "Case 15e failed: Right page must display Air explanation when H2O is selected.");
+
+            // Independent left & right ScrollRects
+            Assert(bookUi.LeftScrollRect != null && bookUi.RightScrollRect != null && bookUi.LeftScrollRect != bookUi.RightScrollRect,
+                "Case 15f failed: Book must have two distinct ScrollRects for Left and Right pages.");
+
+            RectTransform rootCanvasRt = ui.GetComponent<RectTransform>();
+            Vector3 prevCanvasScale = rootCanvasRt.localScale;
+            if (rootCanvasRt.localScale.x < 0.001f)
+                rootCanvasRt.localScale = Vector3.one;
+
+            string originalBody = bookUi.RightDetailBodyText.text;
+            bookUi.RightDetailBodyText.text = originalBody + new string('\n', 24) + "Catatan lanjutan untuk uji gulir kanan.";
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(bookUi.LeftScrollRect.content);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(bookUi.RightDetailRoot.GetComponent<RectTransform>());
+            LayoutRebuilder.ForceRebuildLayoutImmediate(bookUi.RightScrollRect.content);
+
+            var scrollUpdateBounds = typeof(ScrollRect).GetMethod("UpdateBounds", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            scrollUpdateBounds?.Invoke(bookUi.LeftScrollRect, null);
+            scrollUpdateBounds?.Invoke(bookUi.RightScrollRect, null);
+
+            bookUi.LeftScrollRect.verticalNormalizedPosition = 0.25f;
+            bookUi.RightScrollRect.verticalNormalizedPosition = 0.40f;
+            scrollUpdateBounds?.Invoke(bookUi.LeftScrollRect, null);
+            scrollUpdateBounds?.Invoke(bookUi.RightScrollRect, null);
+
+            Assert(Mathf.Abs(bookUi.LeftScrollRect.verticalNormalizedPosition - 0.25f) < 0.02f &&
+                   Mathf.Abs(bookUi.RightScrollRect.verticalNormalizedPosition - 0.40f) < 0.02f,
+                $"Case 15f failed: Left and Right page ScrollRect positions must move independently (L={bookUi.LeftScrollRect.verticalNormalizedPosition}, R={bookUi.RightScrollRect.verticalNormalizedPosition}).");
+            bookUi.RightDetailBodyText.text = originalBody;
+
+            // Selecting another unlocked item resets only right scroll without resetting left scroll
+            EncyclopediaBookSlotUI slotH = bookUi.SpawnedSlots[0];
+            slotH.SlotButton.onClick.Invoke();
+            Canvas.ForceUpdateCanvases();
+            scrollUpdateBounds?.Invoke(bookUi.LeftScrollRect, null);
+            scrollUpdateBounds?.Invoke(bookUi.RightScrollRect, null);
+            Assert(Mathf.Abs(bookUi.LeftScrollRect.verticalNormalizedPosition - 0.25f) < 0.02f &&
+                   Mathf.Abs(bookUi.RightScrollRect.content.anchoredPosition.y) < 1f,
+                $"Case 15f failed: Selecting an entry must keep left scroll position intact and reset right scroll to top (L_norm={bookUi.LeftScrollRect.verticalNormalizedPosition:F3}, R_posY={bookUi.RightScrollRect.content.anchoredPosition.y:F2}).");
+
+            rootCanvasRt.localScale = prevCanvasScale;
+
+            // Bookmark tab switching Index <-> Glosarium
+            float idxActiveY = bookUi.BookmarkIndexRect.anchoredPosition.y;
+            float glosInactiveY = bookUi.BookmarkGlosariumRect.anchoredPosition.y;
+            Assert(idxActiveY > glosInactiveY, "Case 15g failed: Index bookmark must sit higher than Glosarium when active.");
+
+            bookUi.BookmarkGlosariumButton.onClick.Invoke();
+            Assert(bookUi.CurrentTab == EncyclopediaBookUI.BookTab.Glosarium && bookUi.CornerRibbonText.text == "Glosarium",
+                "Case 15g failed: Glosarium bookmark must switch tab & corner banner to 'Glosarium'.");
+            Assert(bookUi.BookmarkGlosariumRect.anchoredPosition.y > bookUi.BookmarkIndexRect.anchoredPosition.y,
+                "Case 15g failed: Glosarium bookmark must raise above Index bookmark when active.");
+            Assert(bookUi.SpawnedGlossaryItems.Count >= 10 && bookUi.RightPromptRoot.activeSelf,
+                "Case 15h failed: Glosarium tab must list alphabetical terms and reset right page prompt.");
+            Assert(bookUi.GlossaryItemsParent.Find("Section_A") != null,
+                "Case 15h failed: Glosarium must show alphabetical section headers (e.g. Section_A).");
+
+            bookUi.SpawnedGlossaryItems[0].ItemButton.onClick.Invoke();
+            Assert(bookUi.RightDetailRoot.activeSelf && !string.IsNullOrEmpty(bookUi.RightDetailBodyText.text) &&
+                   bookUi.SpawnedGlossaryItems[0].SelectionArrow.gameObject.activeSelf,
+                "Case 15h failed: Clicking a glossary term must activate arrow indicator and show explanation on the right page.");
+
+            bookUi.BookmarkIndexButton.onClick.Invoke();
+            Assert(bookUi.CurrentTab == EncyclopediaBookUI.BookTab.Index && bookUi.CornerRibbonText.text == "Index",
+                "Case 15i failed: Index bookmark must switch tab back to 'Index'.");
+            bookUi.Close();
         }
 
         private static void Assert(bool condition, string message)
