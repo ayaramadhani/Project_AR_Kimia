@@ -41,9 +41,15 @@ namespace ARKimia.EditorTools
             Sprite circleSprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{UiSpritesFolder}/circle_white.png");
 
             Font fallbackFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            Font fontLogoUnsur = AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/MarkoOne-Regular.ttf") ?? fallbackFont;
-            Font fontTitle = AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/JotiOne-Regular.ttf") ?? fallbackFont;
-            Font fontText = AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/Jua-Regular.ttf") ?? fallbackFont;
+            Font fontLogoUnsur = AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/MarkoOne-Regular.ttf")
+                ?? AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/MarkoOne/MarkoOne-Regular.ttf")
+                ?? fallbackFont;
+            Font fontTitle = AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/JotiOne-Regular.ttf")
+                ?? AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/Joti_One/JotiOne-Regular.ttf")
+                ?? fallbackFont;
+            Font fontText = AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/Jua-Regular.ttf")
+                ?? AssetDatabase.LoadAssetAtPath<Font>($"{FontsFolder}/Jua/Jua-Regular.ttf")
+                ?? fallbackFont;
             Material placeholderMat = AssetDatabase.LoadAssetAtPath<Material>($"{MaterialsFolder}/PlaceholderAtomMaterial.mat");
 
             WireSharedDatabaseAssets(placeholderMat, fontLogoUnsur, fontTitle, fontText);

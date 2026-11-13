@@ -1,32 +1,41 @@
-# Unity generated
-/[Ll]ibrary/
-/[Tt]emp/
-/[Oo]bj/
-/[Bb]uild/
-/[Bb]uilds/
-/[Ll]ogs/
-/[Uu]ser[Ss]ettings/
-/[Mm]emoryCaptures/
-/[Aa]ssets/AssetStoreTools*
-/.utmp/
 
-# Visual Studio / VS Code
+# Unity generated folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Aa]ssets/AssetStoreTools*
+.utmp/
+
+# IDE generated files
 .vs/
 .vscode/
-/*.csproj
-/*.unityproj
-/*.sln
-/*.slnx
-/*.suo
-/*.user
-/*.userprefs
-/*.pidb
-/*.booproj
-/*.svd
-/*.pdb
-/*.opendb
-/*.VC.db
+.idea/
 
-# OS
+# Visual Studio project files
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.VC.db
+
+# Build files
+*.apk
+*.aab
+*.unitypackage
+
+# Operating system files
 .DS_Store
 Thumbs.db
