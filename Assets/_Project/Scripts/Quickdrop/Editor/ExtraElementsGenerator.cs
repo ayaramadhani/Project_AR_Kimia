@@ -1,8 +1,10 @@
 #if UNITY_EDITOR
+
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using ARKimia.Data;
 
 public static class ExtraElementsGenerator
 {
@@ -46,38 +48,96 @@ public static class ExtraElementsGenerator
     public static void CreateElements()
     {
         EnsureFolder(ElemFolder);
-        var list = new List<ElementData>();
+
+        var list = new List<ElementSO>();
 
         foreach (var d in Defs)
         {
             var e = FindElementBySymbol(d.symbol);
+
             if (e == null)
             {
                 string path = ElemFolder + "/" + d.name + ".asset";
-                e = ScriptableObject.CreateInstance<ElementData>();
-                e.symbol = d.symbol;
-                e.displayName = d.name;
-                e.atomicNumber = d.number;
-                e.cardImageName = "Card_" + d.name;
+
+                e = ScriptableObject.CreateInstance<ElementSO>();
+
+                // Mengisi field private ElementSO melalui SerializedObject
+                SerializedObject so = new SerializedObject(e);
+
+                so.FindProperty("elementId").stringValue = d.symbol.ToLower();
+                so.FindProperty("elementName").stringValue = d.name;
+                so.FindProperty("symbol").stringValue = d.symbol;
+                so.FindProperty("atomicNumber").intValue = d.number;
+
+                so.ApplyModifiedProperties();
+
                 AssetDatabase.CreateAsset(e, path);
+
                 Debug.Log("Dibuat: " + path);
             }
+
             list.Add(e);
         }
+
         AssetDatabase.SaveAssets();
 
-        var db = GetSelected<ChemistryDatabase>();
+        // Mengambil ChemistryDatabase yang sedang dipilih di Project
+        var db = Selection.activeObject as ChemistryDatabase;
+
         if (db == null)
         {
-            Debug.Log("Aset siap. Pilih objek ChemistryDatabase di Hierarchy lalu jalankan menu ini lagi untuk memasukkannya ke daftar.");
+            Debug.LogWarning(
+                "Aset unsur berhasil dibuat. Pilih file ChemistryDatabase " +
+                "di Project Window, lalu jalankan menu ini kembali."
+            );
+
+            return;
+        }
+
+        // Mengakses list private 'elements' melalui SerializedObject
+        SerializedObject dbSO = new SerializedObject(db);
+        SerializedProperty elementsProperty = dbSO.FindProperty("elements");
+
+        if (elementsProperty == null)
+        {
+            Debug.LogError("Property 'elements' tidak ditemukan di ChemistryDatabase.");
             return;
         }
 
         int added = 0;
+
         foreach (var e in list)
-            if (!db.elements.Contains(e)) { db.elements.Add(e); added++; }
-        MarkDirty(db);
-        Debug.Log("ChemistryDatabase: " + added + " unsur ditambahkan (total " + db.elements.Count + ").");
+        {
+            bool exists = false;
+
+            for (int i = 0; i < elementsProperty.arraySize; i++)
+            {
+                if (elementsProperty.GetArrayElementAtIndex(i).objectReferenceValue == e)
+                {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists)
+            {
+                int index = elementsProperty.arraySize;
+                elementsProperty.InsertArrayElementAtIndex(index);
+                elementsProperty.GetArrayElementAtIndex(index).objectReferenceValue = e;
+                added++;
+            }
+        }
+
+        dbSO.ApplyModifiedProperties();
+
+        EditorUtility.SetDirty(db);
+        AssetDatabase.SaveAssets();
+
+        Debug.Log(
+            "ChemistryDatabase: " + added +
+            " unsur ditambahkan (total " +
+            elementsProperty.arraySize + ")."
+        );
     }
 
     // ---------- Menu 2: ensiklopedia + EncyclopediaPopup ----------
@@ -121,20 +181,38 @@ public static class ExtraElementsGenerator
     }
 
     // ---------- Pembantu ----------
-    static ElementData FindElementBySymbol(string symbol)
+    static ElementSO FindElementBySymbol(string symbol)
     {
-        foreach (var guid in AssetDatabase.FindAssets("t:ElementData"))
+        foreach (var guid in AssetDatabase.FindAssets("t:ElementSO"))
         {
-            var e = AssetDatabase.LoadAssetAtPath<ElementData>(AssetDatabase.GUIDToAssetPath(guid));
-            if (e != null && e.symbol == symbol) return e;
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+
+            var e = AssetDatabase.LoadAssetAtPath<ElementSO>(path);
+
+            if (e != null && e.Symbol == symbol)
+            {
+                return e;
+            }
         }
+
         return null;
     }
 
-    static T GetSelected<T>() where T : Component
+    static T GetSelected<T>() where T : UnityEngine.Object
     {
-        var go = Selection.activeGameObject;
-        return go != null ? go.GetComponent<T>() : null;
+        // Jika yang dipilih adalah asset di Project Window
+        T selectedAsset = Selection.activeObject as T;
+
+        if (selectedAsset != null)
+            return selectedAsset;
+
+        // Jika yang dipilih adalah GameObject di Hierarchy
+        GameObject go = Selection.activeGameObject;
+
+        if (go != null)
+            return go.GetComponent(typeof(T)) as T;
+
+        return null;
     }
 
     static void MarkDirty(Component c)
