@@ -1,20 +1,31 @@
 
-using System.Collections;
 using System;
+using System.Collections;
 using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ARScreenshotController : MonoBehaviour
 {
-    [Header("UI References")]
-    [SerializeField] private GameObject leftSidebar;
+    [Header("UI yang Disembunyikan Saat Screenshot")]
+    [SerializeField] private GameObject[] uiToHide;
+
+    [Header("Screenshot Preview")]
     [SerializeField] private GameObject screenshotPanel;
     [SerializeField] private RawImage screenshotPreview;
     [SerializeField] private AspectRatioFitter aspectRatioFitter;
 
+    [Header("Kamera AR")]
+    [SerializeField] private Camera arCamera;
+
+    [Header("UI yang Disembunyikan Selama Panel Screenshot Terbuka")]
+    [SerializeField] private GameObject[] uiHiddenWhilePanelOpen;
+
     private Texture2D currentScreenshot;
     private bool isCapturing = false;
+
+    private bool[] panelHiddenStates;
+    private bool isPanelUIHidden = false;
 
     // =====================================
     // 1. MENGAMBIL SCREENSHOT
@@ -25,6 +36,18 @@ public class ARScreenshotController : MonoBehaviour
         if (isCapturing)
             return;
 
+        if (screenshotPanel == null)
+        {
+            Debug.LogError("Screenshot Panel belum diatur!");
+            return;
+        }
+
+        if (screenshotPreview == null)
+        {
+            Debug.LogError("Screenshot Preview belum diatur!");
+            return;
+        }
+
         StartCoroutine(CaptureARScreen());
     }
 
@@ -32,48 +55,193 @@ public class ARScreenshotController : MonoBehaviour
     {
         isCapturing = true;
 
-        // Sembunyikan UI sementara.
-        leftSidebar.SetActive(false);
-        screenshotPanel.SetActive(false);
+        int uiCount = uiToHide != null ? uiToHide.Length : 0;
+        bool[] previousStates = new bool[uiCount];
 
-        // Tunggu sampai frame selesai dirender.
-        yield return new WaitForEndOfFrame();
+        Texture2D newScreenshot = null;
 
-        // Ambil screenshot.
-        Texture2D newScreenshot =
-            ScreenCapture.CaptureScreenshotAsTexture();
+        try
+        {
+            // Simpan kondisi awal dan sembunyikan UI.
+            for (int i = 0; i < uiCount; i++)
+            {
+                if (uiToHide[i] != null)
+                {
+                    previousStates[i] = uiToHide[i].activeSelf;
+                    uiToHide[i].SetActive(false);
+                }
+            }
 
-        // Tampilkan kembali UI.
-        leftSidebar.SetActive(true);
-        screenshotPanel.SetActive(true);
+            // Sembunyikan panel screenshot.
+            screenshotPanel.SetActive(false);
 
-        // Hapus gambar sebelumnya.
+            // Perbarui Canvas.
+            Canvas.ForceUpdateCanvases();
+
+            // Tunggu sampai rendering selesai.
+            yield return new WaitForEndOfFrame();
+
+            int w = Screen.width;
+            int h = Screen.height;
+
+            RenderTexture rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            RenderTexture prevTarget = arCamera.targetTexture;
+            RenderTexture prevActive = RenderTexture.active;
+
+            arCamera.targetTexture = rt;
+            arCamera.Render();
+
+            RenderTexture.active = rt;
+            newScreenshot = new Texture2D(w, h, TextureFormat.RGB24, false);
+            newScreenshot.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+            newScreenshot.Apply();
+
+            arCamera.targetTexture = prevTarget;
+            RenderTexture.active = prevActive;
+            rt.Release();
+            Destroy(rt);
+
+            // =====================================
+            // DEBUG HASIL SCREENSHOT
+            // =====================================
+
+            if (newScreenshot != null)
+            {
+                Debug.Log("Screenshot berhasil dibuat.");
+
+                Debug.Log("Resolusi: " +
+                    newScreenshot.width + " x " +
+                    newScreenshot.height);
+
+                Color centerPixel = newScreenshot.GetPixel(
+                    newScreenshot.width / 2,
+                    newScreenshot.height / 2
+                );
+
+                Debug.Log("Warna pixel tengah: " + centerPixel);
+                Debug.Log("Alpha pixel tengah: " + centerPixel.a);
+
+                Color[] pixels = newScreenshot.GetPixels();
+
+                int visiblePixels = 0;
+
+                foreach (Color pixel in pixels)
+                {
+                    if (pixel.a > 0.01f)
+                    {
+                        visiblePixels++;
+                    }
+                }
+
+                Debug.Log("Total pixel: " + pixels.Length);
+                Debug.Log("Pixel tidak transparan: " + visiblePixels);
+                Debug.Log("Format Texture: " + newScreenshot.format);
+            }
+            else
+            {
+                Debug.LogError("Texture screenshot NULL!");
+            }
+        }
+        finally
+        {
+            // Kembalikan kondisi UI seperti semula.
+            for (int i = 0; i < uiCount; i++)
+            {
+                if (uiToHide[i] != null)
+                {
+                    uiToHide[i].SetActive(previousStates[i]);
+                }
+            }
+
+            isCapturing = false;
+        }
+
+        // Periksa apakah screenshot berhasil dibuat.
+        if (newScreenshot == null)
+        {
+            Debug.LogError("Screenshot gagal diambil!");
+            yield break;
+        }
+
+        if (newScreenshot.width <= 0 || newScreenshot.height <= 0)
+        {
+            Debug.LogError("Resolusi screenshot tidak valid!");
+            Destroy(newScreenshot);
+            yield break;
+        }
+
+        // Hapus screenshot sebelumnya.
         if (currentScreenshot != null)
         {
             Destroy(currentScreenshot);
         }
 
+        // Simpan screenshot terbaru.
         currentScreenshot = newScreenshot;
 
-        // Tampilkan screenshot di preview.
+        // =====================================
+        // 2. TAMPILKAN SCREENSHOT PADA RAW IMAGE
+        // =====================================
+
+        screenshotPanel.SetActive(true);
+        HideUIWhilePanelOpen();
+
+        Canvas.ForceUpdateCanvases();
+
+        // Aktifkan RawImage.
+        screenshotPreview.gameObject.SetActive(true);
+        screenshotPreview.enabled = true;
+
+        // Pastikan warna RawImage tidak transparan.
+        screenshotPreview.color = Color.white;
+
+        // Masukkan Texture ke RawImage.
         screenshotPreview.texture = currentScreenshot;
 
-        // Sesuaikan rasio gambar.
+        // Atur rasio gambar.
         if (aspectRatioFitter != null)
         {
+            aspectRatioFitter.aspectMode =
+                AspectRatioFitter.AspectMode.FitInParent;
+
             aspectRatioFitter.aspectRatio =
                 (float)currentScreenshot.width /
                 currentScreenshot.height;
-
-            aspectRatioFitter.aspectMode =
-                AspectRatioFitter.AspectMode.FitInParent;
         }
 
-        isCapturing = false;
+        // Perbarui tampilan UI.
+        screenshotPreview.SetAllDirty();
+        Canvas.ForceUpdateCanvases();
+
+        // =====================================
+        // 3. DEBUG TAMPILAN PREVIEW
+        // =====================================
+
+        Debug.Log("========== SCREENSHOT PREVIEW ==========");
+
+        Debug.Log("Screenshot berhasil ditampilkan.");
+
+        Debug.Log("Texture tersedia: " +
+            (screenshotPreview.texture != null));
+
+        Debug.Log("RawImage aktif: " +
+            screenshotPreview.gameObject.activeInHierarchy);
+
+        Debug.Log("RawImage enabled: " +
+            screenshotPreview.enabled);
+
+        Debug.Log("Resolusi screenshot: " +
+            currentScreenshot.width + " x " +
+            currentScreenshot.height);
+
+        Debug.Log("Ukuran RawImage: " +
+            screenshotPreview.rectTransform.rect.size);
+
+        Debug.Log("========================================");
     }
 
     // =====================================
-    // 2. DOWNLOAD SCREENSHOT
+    // 4. DOWNLOAD SCREENSHOT
     // =====================================
 
     public void DownloadScreenshot()
@@ -91,9 +259,9 @@ public class ARScreenshotController : MonoBehaviour
 
 #if UNITY_EDITOR
 
-        // Simpan ke komputer saat diuji di Unity Editor.
         string folderPath = Path.Combine(
-            Application.dataPath, "../ScreenshotTest"
+            Application.dataPath,
+            "../ScreenshotTest"
         );
 
         if (!Directory.Exists(folderPath))
@@ -109,7 +277,6 @@ public class ARScreenshotController : MonoBehaviour
 
 #elif UNITY_ANDROID
 
-        // Simpan ke galeri Android.
         NativeGallery.SaveImageToGallery(
             imageBytes,
             "AR_Kimia",
@@ -127,57 +294,125 @@ public class ARScreenshotController : MonoBehaviour
             }
         );
 
+#else
+
+        Debug.LogWarning(
+            "Fitur download belum dikonfigurasi untuk platform ini."
+        );
+
 #endif
     }
 
-public void ShareScreenshot()
-{
-    if (currentScreenshot == null)
+    // =====================================
+    // 5. SHARE SCREENSHOT
+    // =====================================
+
+    public void ShareScreenshot()
     {
-        Debug.LogWarning("Belum ada screenshot untuk dibagikan.");
-        return;
+        if (currentScreenshot == null)
+        {
+            Debug.LogWarning("Belum ada screenshot untuk dibagikan.");
+            return;
+        }
+
+        byte[] imageBytes = currentScreenshot.EncodeToPNG();
+
+        string fileName = "AR_Kimia_" +
+            DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+
+        string filePath = Path.Combine(
+            Application.temporaryCachePath,
+            fileName
+        );
+
+        File.WriteAllBytes(filePath, imageBytes);
+
+#if UNITY_ANDROID || UNITY_IOS
+
+        new NativeShare()
+            .AddFile(filePath)
+            .SetSubject("Screenshot AR Kimia")
+            .SetText("Lihat hasil eksplorasi AR Kimia saya!")
+            .Share();
+
+#else
+
+        Debug.LogWarning(
+            "Fitur share hanya dikonfigurasi untuk Android dan iOS."
+        );
+
+#endif
     }
 
-    byte[] imageBytes = currentScreenshot.EncodeToPNG();
+    // =====================================
+    // 6. KEMBALI KE AR CAMERA
+    // =====================================
 
-    string fileName = "AR_Kimia_" +
-        DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+    public void CloseScreenshotPanel()
+    {
+        if (screenshotPanel != null)
+        {
+            screenshotPanel.SetActive(false);
+        }
 
-    string filePath = Path.Combine(
-        Application.temporaryCachePath,
-        fileName
-    );
+        RestoreUIAfterPanelClosed();
 
-    File.WriteAllBytes(filePath, imageBytes);
-
-    new NativeShare()
-        .AddFile(filePath)
-        .SetSubject("Screenshot AR Kimia")
-        .SetText("Lihat hasil eksplorasi AR Kimia saya!")
-        .Share();
-}
+        Debug.Log("Kembali ke halaman AR Camera.");
+    }
 
     // =====================================
-    // 3. MEMBERSIHKAN MEMORI
+    // 7. MEMBERSIHKAN MEMORI
     // =====================================
 
     private void OnDestroy()
     {
+        RestoreUIAfterPanelClosed();
+
+        if (screenshotPreview != null)
+        {
+            screenshotPreview.texture = null;
+        }
+
         if (currentScreenshot != null)
         {
             Destroy(currentScreenshot);
+            currentScreenshot = null;
         }
     }
 
-public void CloseScreenshotPanel()
-{
-    // Menutup halaman screenshot
-    screenshotPanel.SetActive(false);
+    private void HideUIWhilePanelOpen()
+    {
+        if (isPanelUIHidden || uiHiddenWhilePanelOpen == null)
+            return;
 
-    // Menampilkan kembali sidebar AR
-    leftSidebar.SetActive(true);
+        panelHiddenStates = new bool[uiHiddenWhilePanelOpen.Length];
 
-    Debug.Log("Kembali ke halaman AR Camera.");
-}
+        for (int i = 0; i < uiHiddenWhilePanelOpen.Length; i++)
+        {
+            if (uiHiddenWhilePanelOpen[i] != null)
+            {
+                panelHiddenStates[i] = uiHiddenWhilePanelOpen[i].activeSelf;
+                uiHiddenWhilePanelOpen[i].SetActive(false);
+            }
+        }
+
+        isPanelUIHidden = true;
+    }
+
+    private void RestoreUIAfterPanelClosed()
+    {
+        if (!isPanelUIHidden || uiHiddenWhilePanelOpen == null)
+            return;
+
+        for (int i = 0; i < uiHiddenWhilePanelOpen.Length; i++)
+        {
+            if (uiHiddenWhilePanelOpen[i] != null)
+            {
+                uiHiddenWhilePanelOpen[i].SetActive(panelHiddenStates[i]);
+            }
+        }
+
+        isPanelUIHidden = false;
+    }
 
 }

@@ -1,5 +1,6 @@
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ExitConfirmation : MonoBehaviour
 {
@@ -12,21 +13,17 @@ public class ExitConfirmation : MonoBehaviour
         popupPanel.SetActive(true);
     }
 
-    // Menutup popup ketika pengguna memilih Back
+    // Menutup popup ketika pengguna memilih Tidak
     public void HidePopup()
     {
         popupPanel.SetActive(false);
     }
 
-    // Keluar dari aplikasi
+    // Kembali ke MainMenu ketika pengguna memilih Ya
     public void ConfirmExit()
     {
-        Debug.Log("Pengguna memilih Keluar.");
+        Debug.Log("Pengguna memilih kembali ke MainMenu.");
 
-        Application.Quit();
-
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#endif
+        SceneManager.LoadScene("MainMenu");
     }
 }

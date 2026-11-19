@@ -935,11 +935,11 @@ PlayerSettings:
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
   enableDirectStorage: 0
-  cloudProjectId: e6155413-24bd-4cef-aaa8-b53cdb4b0dad
+  cloudProjectId: ff34f008-8c9c-4d44-ab96-f2dad8bbec2b
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: AR-Kimia
-  organizationId: lock_on732
+  projectName: Project_AR_Kimia
+  organizationId: nurhidayahramadhani002
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
