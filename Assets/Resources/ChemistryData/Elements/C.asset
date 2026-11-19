@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: C
   atomicNumber: 6
   themeColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 8451027943610074165, guid: 443b7b10a773161419b7528e99ac943b, type: 3}
   icon: {fileID: 0}
   description: Dasar dari seluruh kimia organik dan kehidupan di Bumi.
   funFact: Bisa membentuk grafit yang rapuh maupun intan yang merupakan zat alami

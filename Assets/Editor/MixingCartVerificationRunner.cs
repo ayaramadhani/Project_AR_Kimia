@@ -482,6 +482,101 @@ namespace ARKimia.EditorTools
             Assert(bookUi.CurrentTab == EncyclopediaBookUI.BookTab.Index && bookUi.CornerRibbonText.text == "Index",
                 "Case 15i failed: Index bookmark must switch tab back to 'Index'.");
             bookUi.Close();
+
+            // 16. 3D Bohr Atom Prefabs (double-axis AtomAnimator hierarchy, shaders, non-conflict root)
+            Assert(db.Elements.Count == 10, $"Case 16a failed: Expected 10 elements in ChemistryDatabase, got {db.Elements.Count}.");
+            foreach (ElementSO elem in db.Elements)
+            {
+                Assert(elem != null && elem.BohrModelPrefab != null,
+                    $"Case 16a failed: Element {elem?.Symbol} must have bohrModelPrefab assigned.");
+                Assert(elem.BohrModelPrefab.name == $"Prefab_Atom_{elem.Symbol}",
+                    $"Case 16a failed: Expected prefab Prefab_Atom_{elem.Symbol}, got {elem.BohrModelPrefab.name}.");
+
+                GameObject instance = UnityEngine.Object.Instantiate(elem.BohrModelPrefab);
+                try
+                {
+                    Assert(instance.GetComponent<AtomAnimator>() == null,
+                        $"Case 16b failed: Prefab root {instance.name} must not have AtomAnimator.");
+                    Assert(instance.transform.localScale == Vector3.one,
+                        $"Case 16b failed: Prefab root {instance.name} localScale must be Vector3.one.");
+                    Assert(instance.GetComponentsInChildren<Collider>(true).Length == 0,
+                        $"Case 16b failed: Prefab {instance.name} must have zero colliders.");
+
+                    Transform nucleus = instance.transform.Find($"{elem.Symbol}_Inti_Atom");
+                    Assert(nucleus != null, $"Case 16c failed: {elem.Symbol}_Inti_Atom missing under root.");
+                    AtomAnimator nucleusAnim = nucleus.GetComponent<AtomAnimator>();
+                    Assert(nucleusAnim != null && nucleusAnim.gunakanSumbuLokal &&
+                           Vector3.Distance(nucleusAnim.kecepatanPutar, new Vector3(10f, 20f, 5f)) < 0.01f,
+                        $"Case 16c failed: Nucleus AtomAnimator mismatch on {elem.Symbol}.");
+
+                    Transform orbitContainer = instance.transform.Find("Wadah_Semua_Orbit");
+                    Assert(orbitContainer != null && orbitContainer.localPosition == Vector3.zero,
+                        $"Case 16d failed: Wadah_Semua_Orbit missing or offset on {elem.Symbol}.");
+                    AtomAnimator containerAnim = orbitContainer.GetComponent<AtomAnimator>();
+                    Assert(containerAnim != null && !containerAnim.gunakanSumbuLokal &&
+                           Vector3.Distance(containerAnim.kecepatanPutar, new Vector3(15f, 35f, 10f)) < 0.01f,
+                        $"Case 16d failed: Wadah_Semua_Orbit AtomAnimator mismatch on {elem.Symbol}.");
+
+                    Assert(orbitContainer.childCount >= 1,
+                        $"Case 16e failed: {elem.Symbol} must have at least 1 orbit under Wadah_Semua_Orbit.");
+
+                    float maxWorldDelta = 0f;
+                    for (int oIdx = 0; oIdx < orbitContainer.childCount; oIdx++)
+                    {
+                        Transform orbit = orbitContainer.GetChild(oIdx);
+                        AtomAnimator orbitAnim = orbit.GetComponent<AtomAnimator>();
+                        MeshFilter mf = orbit.GetComponent<MeshFilter>();
+                        Vector3 localAxis = AtomPrefabBuilder.DetectRingNormalAxis(mf);
+                        float expectedSign = (oIdx % 2 == 0) ? 1f : -1f;
+                        float axisSpeed = Vector3.Dot(orbitAnim != null ? orbitAnim.kecepatanPutar : Vector3.zero, localAxis);
+
+                        Assert(orbitAnim != null && orbitAnim.gunakanSumbuLokal && axisSpeed * expectedSign > 100f,
+                            $"Case 16e failed: Orbit {orbit.name} must use local axis ({localAxis}) with alternating speed.");
+
+                        Vector3 normalBeforeSelf = orbit.TransformDirection(localAxis).normalized;
+                        orbit.Rotate(orbitAnim.kecepatanPutar * 0.25f, Space.Self);
+                        Vector3 normalAfterSelf = orbit.TransformDirection(localAxis).normalized;
+                        Assert(Vector3.Dot(normalBeforeSelf, normalAfterSelf) > 0.9999f,
+                            $"Case 16f failed: Self-axis spin on {orbit.name} tilted the ring plane (dot={Vector3.Dot(normalBeforeSelf, normalAfterSelf):F5}).");
+                    }
+
+                    var beforeWorldNormals = new Vector3[orbitContainer.childCount];
+                    for (int oIdx = 0; oIdx < orbitContainer.childCount; oIdx++)
+                    {
+                        Transform orbit = orbitContainer.GetChild(oIdx);
+                        Vector3 localAxis = AtomPrefabBuilder.DetectRingNormalAxis(orbit.GetComponent<MeshFilter>());
+                        beforeWorldNormals[oIdx] = orbit.TransformDirection(localAxis).normalized;
+                    }
+                    orbitContainer.Rotate(containerAnim.kecepatanPutar * 0.25f, Space.World);
+                    for (int oIdx = 0; oIdx < orbitContainer.childCount; oIdx++)
+                    {
+                        Transform orbit = orbitContainer.GetChild(oIdx);
+                        Vector3 localAxis = AtomPrefabBuilder.DetectRingNormalAxis(orbit.GetComponent<MeshFilter>());
+                        Vector3 afterWorld = orbit.TransformDirection(localAxis).normalized;
+                        float angleDelta = Vector3.Angle(beforeWorldNormals[oIdx], afterWorld);
+                        if (angleDelta > maxWorldDelta)
+                            maxWorldDelta = angleDelta;
+                    }
+                    Assert(maxWorldDelta > 1f,
+                        $"Case 16g failed: World-space rotation on Wadah_Semua_Orbit did not precess orbits on {elem.Symbol} (maxDelta={maxWorldDelta:F2}deg).");
+
+                    MeshRenderer[] renderers = instance.GetComponentsInChildren<MeshRenderer>(true);
+                    Assert(renderers.Length >= 2, $"Case 16h failed: Expected >= 2 MeshRenderers on {elem.Symbol}.");
+                    for (int r = 0; r < renderers.Length; r++)
+                    {
+                        Material[] mats = renderers[r].sharedMaterials;
+                        for (int m = 0; m < mats.Length; m++)
+                        {
+                            Assert(mats[m] != null && mats[m].shader != null && mats[m].shader.name != "Hidden/InternalErrorShader",
+                                $"Case 16h failed: Broken/error material on {elem.Symbol}/{renderers[r].name}.");
+                        }
+                    }
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(instance);
+                }
+            }
         }
 
         private static void Assert(bool condition, string message)

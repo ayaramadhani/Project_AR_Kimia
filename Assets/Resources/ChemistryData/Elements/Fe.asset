@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: Fe
   atomicNumber: 26
   themeColor: {r: 0.7, g: 0.4, b: 0.2, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 5284035297940295077, guid: f0db7a59030c5c74796d8c5fa4ca3f47, type: 3}
   icon: {fileID: 0}
   description: Logam transisi magnetik penyusun utama inti Bumi.
   funFact: Memberikan warna merah pada darah manusia (melalui hemoglobin) dan permukaan

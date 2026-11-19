@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: H
   atomicNumber: 1
   themeColor: {r: 0.9, g: 0.9, b: 0.95, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 8975521918277944278, guid: e3cc7630faf101a4698585a0cf6c5872, type: 3}
   icon: {fileID: 0}
   description: Unsur paling melimpah di alam semesta, gas tak berwarna dan sangat
     mudah terbakar.

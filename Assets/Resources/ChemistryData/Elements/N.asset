@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: N
   atomicNumber: 7
   themeColor: {r: 0.2, g: 0.4, b: 0.9, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 4482264096621653895, guid: 4938914b55fd4754bb2afc8cad46025f, type: 3}
   icon: {fileID: 0}
   description: Gas inert penyusun utama atmosfer Bumi.
   funFact: Mencakup sekitar 78% dari udara yang kita hirup.

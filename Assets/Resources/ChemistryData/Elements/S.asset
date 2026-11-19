@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: S
   atomicNumber: 16
   themeColor: {r: 0.95, g: 0.85, b: 0.1, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 3675090234612432335, guid: 835b9133dd0d2f14ca3d76f033452517, type: 3}
   icon: {fileID: 0}
   description: Non-logam padat berwarna kuning terang yang umum ditemukan di kawasan
     vulkanik.
