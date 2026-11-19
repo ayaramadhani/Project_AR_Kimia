@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: Ca
   atomicNumber: 20
   themeColor: {r: 0.85, g: 0.85, b: 0.8, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 6850503179100330659, guid: 29585ffd1cd127b428c77cfab268f758, type: 3}
   icon: {fileID: 0}
   description: Logam penting untuk pembentukan tulang dan gigi pada makhluk hidup.
   funFact: Unsur logam paling melimpah kelima di kerak Bumi.

@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: Cl
   atomicNumber: 17
   themeColor: {r: 0.2, g: 0.8, b: 0.3, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 8737968621069208120, guid: c423ca9f36000764db5467b78d9822e7, type: 3}
   icon: {fileID: 0}
   description: Halogen berwujud gas kuning kehijauan dengan bau menyengat.
   funFact: Banyak digunakan sebagai disinfektan air dan pemutih.

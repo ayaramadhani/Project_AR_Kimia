@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: Na
   atomicNumber: 11
   themeColor: {r: 0.6, g: 0.3, b: 0.8, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 6607392616826007441, guid: c0da75d1917ffe04e81f44bbfc0ef82c, type: 3}
   icon: {fileID: 0}
   description: Logam alkali reaktif yang lunak dan berwarna perak.
   funFact: Bereaksi hebat dan meledak jika bersentuhan langsung dengan air.

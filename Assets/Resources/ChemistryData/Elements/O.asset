@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: O
   atomicNumber: 8
   themeColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 9152883208417214754, guid: efcda857b2c57c34bad7dccd12ce3da5, type: 3}
   icon: {fileID: 0}
   description: Gas esensial untuk respirasi sebagian besar makhluk hidup dan proses
     pembakaran.

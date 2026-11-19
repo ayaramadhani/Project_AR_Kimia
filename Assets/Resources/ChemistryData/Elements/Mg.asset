@@ -17,7 +17,7 @@ MonoBehaviour:
   symbol: Mg
   atomicNumber: 12
   themeColor: {r: 0.5, g: 0.7, b: 0.5, a: 1}
-  bohrModelPrefab: {fileID: 0}
+  bohrModelPrefab: {fileID: 4155113320180959288, guid: 096e2d9cac7cf2646957eafe816b3df2, type: 3}
   icon: {fileID: 0}
   description: Logam alkali tanah yang ringan dan kuat.
   funFact: Menghasilkan nyala putih yang sangat menyilaukan saat dibakar.

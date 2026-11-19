@@ -11,11 +11,14 @@ public class SidebarCollapse : MonoBehaviour
 
     [Header("Posisi tombol (px)")]
     public float openInset = 12f;
-    public float closedInset = 16f;
+    public float closedInset = 64f;
+    public float closedTopInset = 24f;
     public float topInset = 12f;
+    public bool respectScreenSafeArea = true;
 
     RectTransform rt, btnRt;
     bool collapsed;
+    bool initialized;
     Coroutine anim;
 
     public bool IsCollapsed => collapsed;
@@ -27,7 +30,17 @@ public class SidebarCollapse : MonoBehaviour
             toggleButton.onClick.AddListener(Toggle);
     }
 
-    void Start() => Set(startCollapsed, true);
+    void Start()
+    {
+        initialized = true;
+        Set(startCollapsed, true);
+    }
+
+    void OnRectTransformDimensionsChange()
+    {
+        if (initialized && anim == null)
+            Set(collapsed, true);
+    }
 
     void EnsureRefs()
     {
@@ -50,9 +63,41 @@ public class SidebarCollapse : MonoBehaviour
         float w = rt != null && rt.rect.width > 0f ? rt.rect.width : (rt != null && rt.sizeDelta.x > 0f ? rt.sizeDelta.x : 312f);
         float bw = btnRt != null && btnRt.rect.width > 0f ? btnRt.rect.width : (btnRt != null && btnRt.sizeDelta.x > 0f ? btnRt.sizeDelta.x : 68f);
         sideX = isCollapsed ? w : 0f;
-        btnPos = isCollapsed
-            ? new Vector2(-closedInset, -topInset)
-            : new Vector2(-w + openInset + bw, -topInset);
+        if (isCollapsed)
+        {
+            float rightMargin = closedInset;
+            float topMargin = closedTopInset;
+            if (respectScreenSafeArea)
+            {
+                ComputeSafeAreaRightTop(out float safeRight, out float safeTop);
+                if (safeRight > 0f)
+                    rightMargin = Mathf.Max(rightMargin, safeRight + 24f);
+                if (safeTop > 0f)
+                    topMargin = Mathf.Max(topMargin, safeTop + 16f);
+            }
+            btnPos = new Vector2(-rightMargin, -topMargin);
+        }
+        else
+        {
+            btnPos = new Vector2(-w + openInset + bw, -topInset);
+        }
+    }
+
+    void ComputeSafeAreaRightTop(out float safeRight, out float safeTop)
+    {
+        safeRight = 0f;
+        safeTop = 0f;
+        if (Screen.width <= 0 || Screen.height <= 0)
+            return;
+
+        Rect safe = Screen.safeArea;
+        float pxRight = Mathf.Max(0f, Screen.width - safe.xMax);
+        float pxTop = Mathf.Max(0f, Screen.height - safe.yMax);
+
+        Canvas rootCanvas = GetComponentInParent<Canvas>();
+        float scale = rootCanvas != null && rootCanvas.scaleFactor > 0.01f ? rootCanvas.scaleFactor : 1f;
+        safeRight = pxRight / scale;
+        safeTop = pxTop / scale;
     }
 
     void Set(bool value, bool instant)

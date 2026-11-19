@@ -132,6 +132,16 @@ namespace ARKimia.Gameplay
             MarkCompoundRead(compound);
         }
 
+        public bool IsElementDiscovered(ElementSO element)
+        {
+            return element != null && discoveredElements.Contains(element);
+        }
+
+        public bool IsCompoundDiscovered(CompoundSO compound)
+        {
+            return compound != null && discoveredCompounds.Contains(compound);
+        }
+
         public bool IsElementUnread(ElementSO element)
         {
             return element != null && unreadElements.Contains(element);
