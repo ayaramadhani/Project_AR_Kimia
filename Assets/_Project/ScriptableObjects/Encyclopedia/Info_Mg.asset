@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
   key: Mg
   category: UNSUR
-  subtitle: Nomor atom 12 | Massa atom 24,305 | Padat (logam alkali tanah)
-  description: Magnesium adalah logam ringan berwarna perak keputihan yang terbakar
-    dengan nyala putih sangat terang. Di alam, magnesium menjadi atom pusat molekul
-    klorofil pada daun tumbuhan hijau.
-  funFact: Tanpa atom magnesium di dalam klorofil, tumbuhan tidak akan bisa menangkap
-    cahaya matahari untuk fotosintesis.
+  subtitle: Nomor atom 12 | Massa atom 24,305 | Padat (logam)
+  description: Magnesium adalah logam ringan berwarna putih keperakan yang kuat dan
+    mudah terbakar. Saat dibakar, magnesium menyala putih sangat terang. Logam ini
+    dipakai untuk membuat paduan yang ringan, misalnya pada rangka kendaraan dan
+    laptop.
+  funFact: Atom magnesium berada di pusat molekul klorofil, zat hijau daun yang dipakai
+    tumbuhan untuk fotosintesis.

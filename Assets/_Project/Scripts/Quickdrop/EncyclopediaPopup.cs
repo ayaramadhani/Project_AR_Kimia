@@ -92,14 +92,33 @@ public class EncyclopediaPopup : MonoBehaviour, IPointerClickHandler
     public void ShowElement(ElementSO e)
     {
         if (e == null || panel == null) return;
+
         var entry = Find(e.Symbol);
+
+        if (entry == null)
+            Debug.LogWarning(
+                "Ensiklopedia: entri '" + e.Symbol +
+                "' belum ada. Jalankan Chemistry > Sinkronkan Data Quickdrop."
+            );
+
         ApplyAccent(false);
-        if (categoryText) categoryText.text = "UNSUR";
-        if (symbolText) symbolText.text = e.Symbol;
-        if (nameText) nameText.text = e.ElementName;
-        if (infoText) infoText.text = (entry != null && !string.IsNullOrWhiteSpace(entry.subtitle))
-            ? entry.subtitle : "Nomor atom " + e.AtomicNumber;
+
+        if (categoryText)
+            categoryText.text = "UNSUR";
+
+        if (symbolText)
+            symbolText.text = e.Symbol;
+
+        if (nameText)
+            nameText.text = e.ElementName;
+
+        if (infoText)
+            infoText.text = (entry != null && !string.IsNullOrWhiteSpace(entry.subtitle))
+                ? entry.subtitle
+                : "Nomor atom " + e.AtomicNumber;
+
         Fill(entry, e.Description, e.FunFact);
+
         Open();
     }
 

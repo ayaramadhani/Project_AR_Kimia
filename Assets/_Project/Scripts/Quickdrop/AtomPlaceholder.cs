@@ -17,10 +17,10 @@ public class AtomPlaceholder : MonoBehaviour
         { "O",  new Color(0.91f, 0.15f, 0.17f) },
         { "Na", new Color(0.61f, 0.36f, 0.96f) },
         { "Cl", new Color(0.18f, 0.80f, 0.25f) },
-        { "S",  new Color(0.99f, 0.85f, 0.21f) },
-        { "Mg", new Color(0.98f, 0.55f, 0.00f) },
-        { "Ca", new Color(0.56f, 0.64f, 0.68f) },
-        { "Fe", new Color(0.55f, 0.43f, 0.39f) },
+        { "S",  new Color(0.95f, 0.85f, 0.20f) },
+        { "Mg", new Color(0.30f, 0.75f, 0.35f) },
+        { "Ca", new Color(0.30f, 0.80f, 0.70f) },
+        { "Fe", new Color(0.85f, 0.45f, 0.25f) },
     };
 
     void Update()

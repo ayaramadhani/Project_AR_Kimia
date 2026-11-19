@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
   key: Ca
   category: UNSUR
-  subtitle: Nomor atom 20 | Massa atom 40,078 | Padat (logam alkali tanah)
-  description: Kalsium adalah logam reaktif yang menyusun tulang, gigi, cangkang
-    kerang, dan batu kapur. Kalsium merupakan mineral paling melimpah di dalam tubuh
-    manusia.
-  funFact: Sekitar 99% kalsium dalam tubuh manusia tersimpan di dalam struktur tulang
-    dan gigi.
+  subtitle: Nomor atom 20 | Massa atom 40,078 | Padat (logam)
+  description: Kalsium adalah logam lunak berwarna perak keabuan yang cukup reaktif,
+    sehingga di alam selalu ditemukan dalam senyawa, misalnya batu kapur, marmer,
+    dan kulit telur. Kalsium menyusun tulang dan gigi serta dibutuhkan oleh otot
+    dan saraf.
+  funFact: Tubuh orang dewasa mengandung sekitar 1 kilogram kalsium, hampir seluruhnya
+    di tulang dan gigi.

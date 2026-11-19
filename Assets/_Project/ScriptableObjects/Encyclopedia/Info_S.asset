@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
   key: S
   category: UNSUR
-  subtitle: Nomor atom 16 | Massa atom 32,06 | Padat (nonlogam)
-  description: Belerang atau sulfur adalah unsur nonlogam berwarna kuning cerah yang
-    banyak ditemukan di sekitar kawah gunung berapi. Unsur ini digunakan dalam pembuatan
-    pupuk, korek api, dan asam sulfat.
-  funFact: Bau menyengat di sekitar kawah gunung berapi berasal dari senyawa gas
-    hidrogen sulfida dan sulfur dioksida.
+  subtitle: Nomor atom 16 | Massa atom 32,06 | Padat (kuning)
+  description: Sulfur atau belerang adalah nonmetal berwarna kuning cerah yang berupa
+    padatan rapuh pada suhu ruang. Unsur ini banyak ditemukan di sekitar gunung berapi
+    dan mata air panas, serta menjadi bahan baku pembuatan asam sulfat, korek api,
+    dan karet.
+  funFact: Bau telur busuk berasal dari gas hidrogen sulfida, senyawa antara hidrogen
+    dan belerang.

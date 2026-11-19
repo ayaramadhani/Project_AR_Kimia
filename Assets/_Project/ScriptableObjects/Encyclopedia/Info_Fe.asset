@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaEntry
   key: Fe
   category: UNSUR
-  subtitle: Nomor atom 26 | Massa atom 55,845 | Padat (logam transisi)
-  description: Besi atau ferrum adalah logam paling banyak digunakan oleh manusia
-    sebagai bahan baku baja dan konstruksi. Di dalam tubuh, zat besi berperan mengikat
-    oksigen di dalam hemoglobin darah.
-  funFact: Inti bagian dalam planet Bumi sebagian besar tersusun dari logam besi
-    dan nikel panas.
+  subtitle: Nomor atom 26 | Massa atom 55,845 | Padat (logam)
+  description: Besi adalah logam keras berwarna abu-abu yang bersifat magnetik dan
+    menjadi bahan dasar baja. Besi mudah berkarat bila bersentuhan dengan oksigen
+    dan air. Unsur ini juga penyusun utama inti Bumi.
+  funFact: Hemoglobin di dalam darah mengandung besi, yang membuat darah berwarna
+    merah dan mengangkut oksigen.

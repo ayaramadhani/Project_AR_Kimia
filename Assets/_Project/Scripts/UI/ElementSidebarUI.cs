@@ -1,7 +1,9 @@
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
 using ARKimia.Data;
 using ARKimia.Gameplay;
 
@@ -197,27 +199,15 @@ public class ElementSidebarUI : MonoBehaviour
         int count = 0;
 
         if (current == Tab.Unsur)
-        {
-            IReadOnlyList<ElementSO> source = (onlyShowDiscovered && boundManager != null)
-                ? boundManager.DiscoveredElementOrder
-                : (db != null ? db.Elements : null);
-
-            if (source != null)
-            {
-                for (int i = 0; i < source.Count; i++)
-                {
-                    ElementSO e = source[i];
-                    if (e == null || !Match(f, e.ElementName, e.Symbol, e.ElementId)) continue;
-                    var item = Instantiate(itemPrefab, listParent);
-                    item.name = $"SidebarItem_{e.Symbol}";
-                    item.gameObject.SetActive(true);
-                    bool unread = boundManager != null && boundManager.IsElementUnread(e);
-                    item.Setup(e, unread);
-                    count++;
-                }
-            }
-        }
-        else
+{
+    foreach (var e in db.Elements.Where(x => x != null).OrderBy(x => x.AtomicNumber))
+    {
+        if (!Match(f, e.displayName, e.Symbol)) continue;
+        Instantiate(itemPrefab, listParent).Setup(e);
+        count++;
+    }
+}
+        else if (current == Tab.Senyawa)
         {
             IReadOnlyList<CompoundSO> source = (onlyShowDiscovered && boundManager != null)
                 ? boundManager.DiscoveredCompoundOrder
@@ -228,12 +218,17 @@ public class ElementSidebarUI : MonoBehaviour
                 for (int i = 0; i < source.Count; i++)
                 {
                     CompoundSO c = source[i];
-                    if (c == null || !Match(f, c.CompoundName, c.ChemicalFormula, c.CompoundId)) continue;
+
+                    if (c == null || !Match(f, c.CompoundName, c.ChemicalFormula, c.CompoundId))
+                        continue;
+
                     var item = Instantiate(itemPrefab, listParent);
                     item.name = $"SidebarItem_{c.ChemicalFormula}";
                     item.gameObject.SetActive(true);
+
                     bool unread = boundManager != null && boundManager.IsCompoundUnread(c);
                     item.Setup(c, unread);
+
                     count++;
                 }
             }
