@@ -59,6 +59,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6743284413149142288}
+  - component: {fileID: 2869733851724583424}
+  - component: {fileID: 3848141428342883516}
   m_Layer: 0
   m_Name: Prefab_Atom_Fe
   m_TagString: Untagged
@@ -83,6 +85,45 @@ Transform:
   - {fileID: 1688152062636828669}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &2869733851724583424
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5284035297940295077}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.04
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3848141428342883516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5284035297940295077}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2039314330842e44bac84869a39e1a38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ARDraggable3D
+  arCamera: {fileID: 0}
+  moveParallelToScreen: 1
+  destroyOnDrop: 1
+  onDroppedOnPanel:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &6978552991398801251
 GameObject:
   m_ObjectHideFlags: 0
