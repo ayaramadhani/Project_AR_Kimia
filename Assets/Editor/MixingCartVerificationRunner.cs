@@ -468,6 +468,13 @@ namespace ARKimia.EditorTools
                 "Case 15g failed: Glosarium bookmark must switch tab & corner banner to 'Glosarium'.");
             Assert(bookUi.BookmarkGlosariumRect.anchoredPosition.y > bookUi.BookmarkIndexRect.anchoredPosition.y,
                 "Case 15g failed: Glosarium bookmark must raise above Index bookmark when active.");
+            Assert(bookUi.GlossaryData != null &&
+                   AssetDatabase.GetAssetPath(bookUi.GlossaryData) == EncyclopediaDataGenerator.GlossaryAssetPath,
+                "Case 15h failed: EncyclopediaBookUI must reference GlossaryData.asset.");
+            Assert(EncyclopediaDataGenerator.GenerateGlossary() == bookUi.GlossaryData,
+                "Case 15h failed: GenerateGlossary() must preserve existing GlossaryData.asset.");
+            Assert(bookUi.GlossaryData.terms.Count >= 10,
+                "Case 15h failed: GlossaryData.asset must contain glossary terms.");
             Assert(bookUi.SpawnedGlossaryItems.Count >= 10 && bookUi.RightPromptRoot.activeSelf,
                 "Case 15h failed: Glosarium tab must list alphabetical terms and reset right page prompt.");
             Assert(bookUi.GlossaryItemsParent.Find("Section_A") != null,

@@ -17,13 +17,6 @@ namespace ARKimia.UI
             Glosarium
         }
 
-        [Serializable]
-        public class GlossaryTerm
-        {
-            public string term;
-            [TextArea(2, 6)] public string definition;
-        }
-
         private static readonly string[] CanonicalElementOrder =
         {
             "H", "O", "C", "N", "Na", "Cl", "S", "Mg", "Ca", "Fe"
@@ -79,10 +72,11 @@ namespace ARKimia.UI
         [Header("Data")]
         [SerializeField] private ChemistryDatabase database;
         [SerializeField] private List<EncyclopediaEntry> entries = new List<EncyclopediaEntry>();
-        [SerializeField] private List<GlossaryTerm> glossaryTerms = new List<GlossaryTerm>();
+        [SerializeField] private EncyclopediaGlossaryData glossaryData;
 
         private readonly List<EncyclopediaBookSlotUI> spawnedSlots = new List<EncyclopediaBookSlotUI>();
         private readonly List<EncyclopediaGlossaryItemUI> spawnedGlossaryItems = new List<EncyclopediaGlossaryItemUI>();
+        private readonly List<GlossaryTerm> activeGlossaryTerms = new List<GlossaryTerm>();
         private readonly Dictionary<string, EncyclopediaEntry> entryLookup =
             new Dictionary<string, EncyclopediaEntry>(StringComparer.OrdinalIgnoreCase);
 
@@ -112,6 +106,7 @@ namespace ARKimia.UI
         public Button BookmarkGlosariumButton => bookmarkGlosariumButton;
         public Button CloseButton => closeButton;
         public EncyclopediaBookSlotUI SelectedSlot => selectedSlot;
+        public EncyclopediaGlossaryData GlossaryData => glossaryData;
         public IReadOnlyList<EncyclopediaBookSlotUI> SpawnedSlots => spawnedSlots;
         public IReadOnlyList<EncyclopediaGlossaryItemUI> SpawnedGlossaryItems => spawnedGlossaryItems;
 
@@ -147,7 +142,8 @@ namespace ARKimia.UI
             GameObject funFactBoxObj,
             TMP_Text funFactTxt,
             ChemistryDatabase db,
-            List<EncyclopediaEntry> entryAssets)
+            List<EncyclopediaEntry> entryAssets,
+            EncyclopediaGlossaryData glossaryAsset = null)
         {
             panelRoot = modalRoot;
             backdropButton = backdropBtn;
@@ -181,13 +177,14 @@ namespace ARKimia.UI
             rightFunFactText = funFactTxt;
             database = db;
             entries = entryAssets ?? new List<EncyclopediaEntry>();
+            glossaryData = glossaryAsset;
         }
 
         private void Awake()
         {
             WireButtons();
             BuildEntryLookup();
-            EnsureDefaultGlossaryTerms();
+            RebuildActiveGlossaryList();
         }
 
         private void OnEnable()
@@ -226,7 +223,7 @@ namespace ARKimia.UI
         {
             WireButtons();
             BuildEntryLookup();
-            EnsureDefaultGlossaryTerms();
+            RebuildActiveGlossaryList();
             EnsureDatabaseLoaded();
             TryBindManager();
             BuildIndexSlotsIfNeeded();
@@ -434,96 +431,26 @@ namespace ARKimia.UI
             }
         }
 
-        private void EnsureDefaultGlossaryTerms()
+        private void RebuildActiveGlossaryList()
         {
-            if (glossaryTerms != null && glossaryTerms.Count > 0)
+            activeGlossaryTerms.Clear();
+            if (glossaryData == null || glossaryData.terms == null)
                 return;
 
-            glossaryTerms = new List<GlossaryTerm>
+            for (int i = 0; i < glossaryData.terms.Count; i++)
             {
-                new GlossaryTerm
-                {
-                    term = "Asam",
-                    definition = "Zat kimia yang melepaskan ion hidrogen (H+) saat dilarutkan dalam air dan biasanya memiliki pH kurang dari 7, seperti asam sulfat (H2SO4)."
-                },
-                new GlossaryTerm
-                {
-                    term = "Atom",
-                    definition = "Satuan terkecil dari suatu unsur kimia yang masih mempertahankan sifat unsur tersebut, tersusun dari inti atom (proton dan neutron) serta elektron di sekitarnya."
-                },
-                new GlossaryTerm
-                {
-                    term = "Elektron",
-                    definition = "Partikel subatom bermuatan negatif yang bergerak mengelilingi inti atom dalam kulit atau orbital elektron dan berperan dalam pembentukan ikatan kimia."
-                },
-                new GlossaryTerm
-                {
-                    term = "Garam",
-                    definition = "Senyawa ion yang terbentuk dari tarik-menarik ion positif (kation logam) dan ion negatif (anion), contohnya natrium klorida (NaCl)."
-                },
-                new GlossaryTerm
-                {
-                    term = "Ikatan Ion",
-                    definition = "Ikatan kimia yang terbentuk karena serah terima elektron antara atom logam yang melepas elektron dan atom nonlogam yang menerima elektron."
-                },
-                new GlossaryTerm
-                {
-                    term = "Ikatan Kovalen",
-                    definition = "Ikatan kimia yang terjadi ketika dua atom nonlogam saling berbagi pasangan elektron agar mencapai konfigurasi stabil, seperti pada molekul air (H2O)."
-                },
-                new GlossaryTerm
-                {
-                    term = "Massa Atom",
-                    definition = "Massa rata-rata sebuah atom suatu unsur yang dinyatakan dalam satuan massa atom (sma), dipengaruhi oleh jumlah proton dan neutron dalam intinya."
-                },
-                new GlossaryTerm
-                {
-                    term = "Molekul",
-                    definition = "Gabungan dua atau lebih atom yang terikat kuat secara kimia sebagai satu kesatuan netral, misalnya molekul air (H2O) dan karbon dioksida (CO2)."
-                },
-                new GlossaryTerm
-                {
-                    term = "Neutron",
-                    definition = "Partikel subatom tidak bermuatan (netral) yang berada di dalam inti atom bersama proton."
-                },
-                new GlossaryTerm
-                {
-                    term = "Nomor Atom",
-                    definition = "Angka yang menunjukkan jumlah proton dalam inti suatu atom dan menjadi identitas unik setiap unsur kimia dalam tabel periodik."
-                },
-                new GlossaryTerm
-                {
-                    term = "Oksida",
-                    definition = "Senyawa kimia yang terbentuk dari gabungan unsur oksigen dengan satu unsur lain, misalnya besi(III) oksida (Fe2O3) atau karat besi."
-                },
-                new GlossaryTerm
-                {
-                    term = "Proton",
-                    definition = "Partikel subatom bermuatan positif (+) yang terdapat di dalam inti atom."
-                },
-                new GlossaryTerm
-                {
-                    term = "Reaksi Kimia",
-                    definition = "Proses ketika satu atau lebih zat pereaksi berubah menjadi zat baru (senyawa) dengan susunan atom dan sifat yang berbeda."
-                },
-                new GlossaryTerm
-                {
-                    term = "Rumus Kimia",
-                    definition = "Notasi singkat menggunakan lambang unsur dan angka indeks bawah (subskrip) untuk menunjukkan jenis serta jumlah atom penyusun senyawa."
-                },
-                new GlossaryTerm
-                {
-                    term = "Senyawa",
-                    definition = "Zat murni yang tersusun dari dua atau lebih unsur kimia berbeda yang bergabung secara kimia dengan perbandingan massa dan atom yang tetap."
-                },
-                new GlossaryTerm
-                {
-                    term = "Unsur",
-                    definition = "Zat murni paling sederhana yang tidak dapat diuraikan lagi menjadi zat lain melalui reaksi kimia biasa, seperti Hidrogen (H) dan Oksigen (O)."
-                }
-            };
+                GlossaryTerm item = glossaryData.terms[i];
+                if (item == null || string.IsNullOrWhiteSpace(item.term))
+                    continue;
 
-            glossaryTerms.Sort((a, b) => string.Compare(a.term, b.term, StringComparison.OrdinalIgnoreCase));
+                activeGlossaryTerms.Add(new GlossaryTerm
+                {
+                    term = item.term.Trim(),
+                    definition = item.definition ?? string.Empty
+                });
+            }
+
+            activeGlossaryTerms.Sort((a, b) => string.Compare(a.term, b.term, StringComparison.OrdinalIgnoreCase));
         }
 
         private void BuildIndexSlotsIfNeeded()
@@ -616,12 +543,12 @@ namespace ARKimia.UI
             if (glossarySectionTemplate != null)
                 glossarySectionTemplate.SetActive(false);
 
-            glossaryTerms.Sort((a, b) => string.Compare(a.term, b.term, StringComparison.OrdinalIgnoreCase));
+            RebuildActiveGlossaryList();
 
             char lastLetter = '\0';
-            for (int i = 0; i < glossaryTerms.Count; i++)
+            for (int i = 0; i < activeGlossaryTerms.Count; i++)
             {
-                string termName = glossaryTerms[i].term ?? string.Empty;
+                string termName = activeGlossaryTerms[i].term;
                 char initial = termName.Length > 0 ? char.ToUpperInvariant(termName[0]) : '#';
 
                 if (glossarySectionTemplate != null && initial != lastLetter)
@@ -753,7 +680,7 @@ namespace ARKimia.UI
 
         private void HandleGlossaryClicked(int index)
         {
-            if (index < 0 || index >= glossaryTerms.Count)
+            if (index < 0 || index >= activeGlossaryTerms.Count)
                 return;
 
             selectedGlossaryIndex = index;
@@ -830,13 +757,13 @@ namespace ARKimia.UI
                 return;
             }
 
-            if (selectedGlossaryIndex < 0 || selectedGlossaryIndex >= glossaryTerms.Count)
+            if (selectedGlossaryIndex < 0 || selectedGlossaryIndex >= activeGlossaryTerms.Count)
             {
                 ShowRightPrompt("Pilihlah istilah yang ingin dilihat penjelasannya!");
                 return;
             }
 
-            ShowSelectedGlossaryDetail(glossaryTerms[selectedGlossaryIndex]);
+            ShowSelectedGlossaryDetail(activeGlossaryTerms[selectedGlossaryIndex]);
         }
 
         private void ShowRightPrompt(string message)
@@ -927,14 +854,15 @@ namespace ARKimia.UI
             if (rightDetailRoot != null)
                 rightDetailRoot.SetActive(true);
 
-            string firstChar = !string.IsNullOrEmpty(term.term)
-                ? term.term.Substring(0, 1).ToUpperInvariant()
+            string trimmedTerm = term.term != null ? term.term.Trim() : string.Empty;
+            string firstChar = !string.IsNullOrEmpty(trimmedTerm)
+                ? trimmedTerm.Substring(0, 1).ToUpperInvariant()
                 : "A";
 
             if (rightDetailBadgeText != null)
                 rightDetailBadgeText.text = firstChar;
             if (rightDetailTitleText != null)
-                rightDetailTitleText.text = term.term;
+                rightDetailTitleText.text = trimmedTerm;
             if (rightDetailSubtitleText != null)
                 rightDetailSubtitleText.text = "ISTILAH GLOSARIUM KIMIA";
             if (rightDetailBodyText != null)

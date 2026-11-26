@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -7,6 +8,7 @@ using UnityEngine;
 public static class EncyclopediaDataGenerator
 {
     public const string Folder = "Assets/_Project/ScriptableObjects/Encyclopedia";
+    public const string GlossaryAssetPath = Folder + "/GlossaryData.asset";
 
     [MenuItem("Chemistry/Generate Encyclopedia Entries")]
     public static List<EncyclopediaEntry> Generate()
@@ -102,6 +104,110 @@ public static class EncyclopediaDataGenerator
             AssetDatabase.CreateAsset(e, path);
         }
         return e;
+    }
+
+    [MenuItem("Chemistry/Generate Glossary Data")]
+    public static EncyclopediaGlossaryData GenerateGlossary()
+    {
+        if (!AssetDatabase.IsValidFolder(Folder))
+        {
+            Directory.CreateDirectory(Folder);
+            AssetDatabase.Refresh();
+        }
+
+        var existing = AssetDatabase.LoadAssetAtPath<EncyclopediaGlossaryData>(GlossaryAssetPath);
+        if (existing != null)
+            return existing;
+
+        var asset = ScriptableObject.CreateInstance<EncyclopediaGlossaryData>();
+        asset.terms = new List<GlossaryTerm>
+        {
+            new GlossaryTerm
+            {
+                term = "Asam",
+                definition = "Zat kimia yang melepaskan ion hidrogen (H+) saat dilarutkan dalam air dan biasanya memiliki pH kurang dari 7, seperti asam sulfat (H2SO4)."
+            },
+            new GlossaryTerm
+            {
+                term = "Atom",
+                definition = "Satuan terkecil dari suatu unsur kimia yang masih mempertahankan sifat unsur tersebut, tersusun dari inti atom (proton dan neutron) serta elektron di sekitarnya."
+            },
+            new GlossaryTerm
+            {
+                term = "Elektron",
+                definition = "Partikel subatom bermuatan negatif yang bergerak mengelilingi inti atom dalam kulit atau orbital elektron dan berperan dalam pembentukan ikatan kimia."
+            },
+            new GlossaryTerm
+            {
+                term = "Garam",
+                definition = "Senyawa ion yang terbentuk dari tarik-menarik ion positif (kation logam) dan ion negatif (anion), contohnya natrium klorida (NaCl)."
+            },
+            new GlossaryTerm
+            {
+                term = "Ikatan Ion",
+                definition = "Ikatan kimia yang terbentuk karena serah terima elektron antara atom logam yang melepas elektron dan atom nonlogam yang menerima elektron."
+            },
+            new GlossaryTerm
+            {
+                term = "Ikatan Kovalen",
+                definition = "Ikatan kimia yang terjadi ketika dua atom nonlogam saling berbagi pasangan elektron agar mencapai konfigurasi stabil, seperti pada molekul air (H2O)."
+            },
+            new GlossaryTerm
+            {
+                term = "Massa Atom",
+                definition = "Massa rata-rata sebuah atom suatu unsur yang dinyatakan dalam satuan massa atom (sma), dipengaruhi oleh jumlah proton dan neutron dalam intinya."
+            },
+            new GlossaryTerm
+            {
+                term = "Molekul",
+                definition = "Gabungan dua atau lebih atom yang terikat kuat secara kimia sebagai satu kesatuan netral, misalnya molekul air (H2O) dan karbon dioksida (CO2)."
+            },
+            new GlossaryTerm
+            {
+                term = "Neutron",
+                definition = "Partikel subatom tidak bermuatan (netral) yang berada di dalam inti atom bersama proton."
+            },
+            new GlossaryTerm
+            {
+                term = "Nomor Atom",
+                definition = "Angka yang menunjukkan jumlah proton dalam inti suatu atom dan menjadi identitas unik setiap unsur kimia dalam tabel periodik."
+            },
+            new GlossaryTerm
+            {
+                term = "Oksida",
+                definition = "Senyawa kimia yang terbentuk dari gabungan unsur oksigen dengan satu unsur lain, misalnya besi(III) oksida (Fe2O3) atau karat besi."
+            },
+            new GlossaryTerm
+            {
+                term = "Proton",
+                definition = "Partikel subatom bermuatan positif (+) yang terdapat di dalam inti atom."
+            },
+            new GlossaryTerm
+            {
+                term = "Reaksi Kimia",
+                definition = "Proses ketika satu atau lebih zat pereaksi berubah menjadi zat baru (senyawa) dengan susunan atom dan sifat yang berbeda."
+            },
+            new GlossaryTerm
+            {
+                term = "Rumus Kimia",
+                definition = "Notasi singkat menggunakan lambang unsur dan angka indeks bawah (subskrip) untuk menunjukkan jenis serta jumlah atom penyusun senyawa."
+            },
+            new GlossaryTerm
+            {
+                term = "Senyawa",
+                definition = "Zat murni yang tersusun dari dua atau lebih unsur kimia berbeda yang bergabung secara kimia dengan perbandingan massa dan atom yang tetap."
+            },
+            new GlossaryTerm
+            {
+                term = "Unsur",
+                definition = "Zat murni paling sederhana yang tidak dapat diuraikan lagi menjadi zat lain melalui reaksi kimia biasa, seperti Hidrogen (H) dan Oksigen (O)."
+            }
+        };
+
+        asset.terms.Sort((a, b) => string.Compare(a.term, b.term, StringComparison.OrdinalIgnoreCase));
+        AssetDatabase.CreateAsset(asset, GlossaryAssetPath);
+        AssetDatabase.SaveAssets();
+        return asset;
     }
 }
 #endif

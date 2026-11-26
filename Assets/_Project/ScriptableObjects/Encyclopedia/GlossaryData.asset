@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8920a760fe6461540bc4ed41d502e6bb, type: 3}
+  m_Name: GlossaryData
+  m_EditorClassIdentifier: Assembly-CSharp::EncyclopediaGlossaryData
+  terms:
+  - term: Asam
+    definition: Zat kimia yang melepaskan ion hidrogen (H+) saat dilarutkan dalam
+      air dan biasanya memiliki pH kurang dari 7, seperti asam sulfat (H2SO4).
+  - term: Atom
+    definition: Satuan terkecil dari suatu unsur kimia yang masih mempertahankan
+      sifat unsur tersebut, tersusun dari inti atom (proton dan neutron) serta elektron
+      di sekitarnya.
+  - term: Elektron
+    definition: Partikel subatom bermuatan negatif yang bergerak mengelilingi inti
+      atom dalam kulit atau orbital elektron dan berperan dalam pembentukan ikatan
+      kimia.
+  - term: Garam
+    definition: Senyawa ion yang terbentuk dari tarik-menarik ion positif (kation
+      logam) dan ion negatif (anion), contohnya natrium klorida (NaCl).
+  - term: Ikatan Ion
+    definition: Ikatan kimia yang terbentuk karena serah terima elektron antara atom
+      logam yang melepas elektron dan atom nonlogam yang menerima elektron.
+  - term: Ikatan Kovalen
+    definition: Ikatan kimia yang terjadi ketika dua atom nonlogam saling berbagi
+      pasangan elektron agar mencapai konfigurasi stabil, seperti pada molekul air
+      (H2O).
+  - term: Massa Atom
+    definition: Massa rata-rata sebuah atom suatu unsur yang dinyatakan dalam satuan
+      massa atom (sma), dipengaruhi oleh jumlah proton dan neutron dalam intinya.
+  - term: Molekul
+    definition: Gabungan dua atau lebih atom yang terikat kuat secara kimia sebagai
+      satu kesatuan netral, misalnya molekul air (H2O) dan karbon dioksida (CO2).
+  - term: Neutron
+    definition: Partikel subatom tidak bermuatan (netral) yang berada di dalam inti
+      atom bersama proton.
+  - term: Nomor Atom
+    definition: Angka yang menunjukkan jumlah proton dalam inti suatu atom dan menjadi
+      identitas unik setiap unsur kimia dalam tabel periodik.
+  - term: Oksida
+    definition: Senyawa kimia yang terbentuk dari gabungan unsur oksigen dengan satu
+      unsur lain, misalnya besi(III) oksida (Fe2O3) atau karat besi.
+  - term: Proton
+    definition: Partikel subatom bermuatan positif (+) yang terdapat di dalam inti
+      atom.
+  - term: Reaksi Kimia
+    definition: Proses ketika satu atau lebih zat pereaksi berubah menjadi zat baru
+      (senyawa) dengan susunan atom dan sifat yang berbeda.
+  - term: Rumus Kimia
+    definition: Notasi singkat menggunakan lambang unsur dan angka indeks bawah (subskrip)
+      untuk menunjukkan jenis serta jumlah atom penyusun senyawa.
+  - term: Senyawa
+    definition: Zat murni yang tersusun dari dua atau lebih unsur kimia berbeda yang
+      bergabung secara kimia dengan perbandingan massa dan atom yang tetap.
+  - term: Unsur
+    definition: Zat murni paling sederhana yang tidak dapat diuraikan lagi menjadi
+      zat lain melalui reaksi kimia biasa, seperti Hidrogen (H) dan Oksigen (O).

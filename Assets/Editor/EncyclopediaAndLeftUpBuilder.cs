@@ -351,6 +351,7 @@ namespace ARKimia.EditorTools
             overlayRt.gameObject.SetActive(false);
 
             List<EncyclopediaEntry> entries = EncyclopediaDataGenerator.Generate();
+            EncyclopediaGlossaryData glossaryData = EncyclopediaDataGenerator.GenerateGlossary();
             ChemistryDatabase db = AssetDatabase.LoadAssetAtPath<ChemistryDatabase>("Assets/Resources/ChemistryData/ChemistryDatabase.asset");
 
             var bookUi = systemRt.gameObject.AddComponent<EncyclopediaBookUI>();
@@ -386,7 +387,8 @@ namespace ARKimia.EditorTools
                 detailRefs.funFactBox,
                 detailRefs.funFactText,
                 db,
-                entries);
+                entries,
+                glossaryData);
 
             return bookUi;
         }
