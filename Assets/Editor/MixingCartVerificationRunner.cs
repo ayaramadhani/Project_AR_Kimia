@@ -641,6 +641,30 @@ namespace ARKimia.EditorTools
             manager.ReloadProgressFromSave();
             Assert(manager.DiscoveredElementOrder.Count == 0 && manager.DiscoveredCompoundOrder.Count == 0,
                 "Case 17e failed: ResetAllProgress + ReloadProgressFromSave must clear progress back to empty.");
+
+            // 17f. Active ARScreenshotController + Figma stage/save toast + non-overlapping DiscoveryPopup description/ContinueButton
+            ARScreenshotController ssCtrl = UnityEngine.Object.FindAnyObjectByType<ARScreenshotController>(UnityEngine.FindObjectsInactive.Include);
+            Assert(ssCtrl != null && ssCtrl.gameObject.activeInHierarchy && ssCtrl.ScreenshotPanel != null && ssCtrl.gameObject != ssCtrl.ScreenshotPanel,
+                "Case 17f failed: ARScreenshotController must sit on an active GameObject separate from inactive ScreenshotPanel.");
+            Assert(ssCtrl.ScreenshotStage != null && ssCtrl.SaveToastRoot != null && !ssCtrl.SaveToastRoot.activeSelf && ssCtrl.SaveToastText != null,
+                "Case 17f failed: ScreenshotStage and SaveToastRoot/Text must be wired on ARScreenshotController.");
+
+            ssCtrl.ShowSaveToast("Screenshot tersimpan!");
+            Assert(ssCtrl.SaveToastRoot.activeSelf && ssCtrl.SaveToastText.text == "Screenshot tersimpan!",
+                "Case 17f failed: ShowSaveToast must activate save toast with message.");
+            ssCtrl.HideSaveToastImmediate();
+            Assert(!ssCtrl.SaveToastRoot.activeSelf,
+                "Case 17f failed: HideSaveToastImmediate must hide save toast.");
+
+            Text popupDescTxt = popupRoot.transform.Find("PopupInner/PopupDescription").GetComponent<Text>();
+            RectTransform popupDescRt = popupDescTxt.rectTransform;
+            RectTransform continueRt = continueBtn.GetComponent<RectTransform>();
+            Vector3[] descCorners = new Vector3[4];
+            Vector3[] btnCorners = new Vector3[4];
+            popupDescRt.GetWorldCorners(descCorners);
+            continueRt.GetWorldCorners(btnCorners);
+            Assert(popupDescTxt.verticalOverflow == VerticalWrapMode.Truncate && descCorners[0].y >= btnCorners[1].y - 0.1f,
+                $"Case 17f failed: DiscoveryPopup description (bottom={descCorners[0].y:F2}) overlaps ContinueButton (top={btnCorners[1].y:F2}).");
         }
 
         private static void Assert(bool condition, string message)

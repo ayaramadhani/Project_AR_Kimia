@@ -4,6 +4,11 @@ using UnityEngine.SceneManagement;
 
 public class GameModeController : MonoBehaviour
 {
+    [Header("Standalone Encyclopedia")]
+    [SerializeField] private ARKimia.UI.EncyclopediaBookUI encyclopediaBook;
+
+    public ARKimia.UI.EncyclopediaBookUI EncyclopediaBook => encyclopediaBook;
+
     // Membuka Scene AR
     public void OpenAR()
     {
@@ -20,9 +25,16 @@ public class GameModeController : MonoBehaviour
         // Scene Quiz belum dihubungkan.
     }
 
-    // Membuka Scene Ensiklopedia (diarahkan ke ARScene dengan buku Ensiklopedia langsung terbuka)
+    // Membuka Ensiklopedia (di dalam scene GameMode jika sudah terpasang)
     public void OpenEncyclopedia()
     {
+        if (encyclopediaBook != null)
+        {
+            Debug.Log("Tombol Ensiklopedia ditekan. Membuka buku Ensiklopedia di GameMode.");
+            encyclopediaBook.OpenIndex();
+            return;
+        }
+
         Debug.Log("Tombol Ensiklopedia ditekan. Membuka ARScene -> Ensiklopedia.");
         ARKimia.UI.EncyclopediaBookUI.OpenOnNextSceneLoad = true;
         SceneManager.LoadScene("ARScene");

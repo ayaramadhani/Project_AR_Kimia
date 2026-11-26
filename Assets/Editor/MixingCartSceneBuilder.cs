@@ -359,8 +359,8 @@ namespace ARKimia.EditorTools
             toastRt.anchorMin = new Vector2(0.5f, 1f);
             toastRt.anchorMax = new Vector2(0.5f, 1f);
             toastRt.pivot = new Vector2(0.5f, 1f);
-            toastRt.anchoredPosition = new Vector2(-120f, -20f);
-            toastRt.sizeDelta = new Vector2(380f, 52f);
+            toastRt.anchoredPosition = new Vector2(-120f, -14f);
+            toastRt.sizeDelta = new Vector2(440f, 46f);
 
             var toastBg = toastRt.gameObject.AddComponent<Image>();
             toastBg.sprite = roundedRect;
@@ -411,8 +411,8 @@ namespace ARKimia.EditorTools
             popupRoot.anchorMin = new Vector2(0.5f, 1f);
             popupRoot.anchorMax = new Vector2(0.5f, 1f);
             popupRoot.pivot = new Vector2(0.5f, 1f);
-            popupRoot.anchoredPosition = new Vector2(-120f, -84f);
-            popupRoot.sizeDelta = new Vector2(420f, 190f);
+            popupRoot.anchoredPosition = new Vector2(-120f, -72f);
+            popupRoot.sizeDelta = new Vector2(460f, 236f);
 
             var popupBorder = popupRoot.gameObject.AddComponent<Image>();
             popupBorder.sprite = roundedRect;
@@ -446,21 +446,25 @@ namespace ARKimia.EditorTools
             popupCompound.rectTransform.anchorMin = new Vector2(0f, 1f);
             popupCompound.rectTransform.anchorMax = new Vector2(1f, 1f);
             popupCompound.rectTransform.pivot = new Vector2(0.5f, 1f);
-            popupCompound.rectTransform.anchoredPosition = new Vector2(0f, -54f);
-            popupCompound.rectTransform.sizeDelta = new Vector2(-24f, 40f);
+            popupCompound.rectTransform.anchoredPosition = new Vector2(0f, -52f);
+            popupCompound.rectTransform.sizeDelta = new Vector2(-24f, 38f);
 
             Text popupDesc = CreateText("PopupDescription", popupInner, fontText, "Deskripsi senyawa.", 16, FontStyle.Normal, Color.white, TextAnchor.UpperCenter);
+            popupDesc.resizeTextForBestFit = true;
+            popupDesc.resizeTextMinSize = 11;
+            popupDesc.resizeTextMaxSize = 16;
+            popupDesc.verticalOverflow = VerticalWrapMode.Truncate;
             popupDesc.rectTransform.anchorMin = new Vector2(0f, 0f);
             popupDesc.rectTransform.anchorMax = new Vector2(1f, 1f);
-            popupDesc.rectTransform.offsetMin = new Vector2(20f, 54f);
-            popupDesc.rectTransform.offsetMax = new Vector2(-20f, -98f);
+            popupDesc.rectTransform.offsetMin = new Vector2(22f, 64f);
+            popupDesc.rectTransform.offsetMax = new Vector2(-22f, -94f);
 
             RectTransform continueBtnRt = CreateRect("ContinueButton", popupInner);
             continueBtnRt.anchorMin = new Vector2(0.5f, 0f);
             continueBtnRt.anchorMax = new Vector2(0.5f, 0f);
             continueBtnRt.pivot = new Vector2(0.5f, 0f);
-            continueBtnRt.anchoredPosition = new Vector2(0f, 10f);
-            continueBtnRt.sizeDelta = new Vector2(150f, 36f);
+            continueBtnRt.anchoredPosition = new Vector2(0f, 12f);
+            continueBtnRt.sizeDelta = new Vector2(160f, 40f);
 
             var continueImg = continueBtnRt.gameObject.AddComponent<Image>();
             continueImg.sprite = roundedRect;

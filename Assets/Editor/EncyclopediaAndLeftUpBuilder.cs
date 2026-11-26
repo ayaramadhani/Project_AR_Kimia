@@ -56,7 +56,7 @@ namespace ARKimia.EditorTools
                 slotTextMat,
                 glossaryDefaultMat,
                 glossarySelectedMat);
-            CameraPanelRefs camRefs = BuildCameraScreenshotPanel(safeArea, circleSprite, roundedRect, jotiSdf);
+            CameraPanelRefs camRefs = BuildCameraScreenshotPanel(safeArea, circleSprite, roundedRect, jotiSdf, juaSdf);
             ExitPopupRefs exitRefs = BuildExitConfirmationPopup(safeArea, juaSdf);
 
             WireIntegrations(
@@ -66,6 +66,67 @@ namespace ARKimia.EditorTools
                 camRefs,
                 exitRefs,
                 hudRootsBeforePanels);
+        }
+
+        [MenuItem("AR Kimia/Setup Standalone Encyclopedia in GameMode")]
+        public static void IntegrateStandaloneBookIntoGameModeScene()
+        {
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(
+                "Assets/Scenes/GameMode.unity",
+                UnityEditor.SceneManagement.OpenSceneMode.Single);
+
+            Canvas canvas = Object.FindAnyObjectByType<Canvas>(FindObjectsInactive.Include);
+            if (canvas == null)
+                throw new System.InvalidOperationException("[EncyclopediaAndLeftUpBuilder] Canvas missing in GameMode.unity.");
+
+            RectTransform canvasRt = canvas.transform as RectTransform;
+            Transform existingSys = canvasRt.Find("EncyclopediaBookSystem");
+            if (existingSys != null)
+                Object.DestroyImmediate(existingSys.gameObject);
+
+            ConfigureEncyclopediaSpriteImporters();
+
+            Sprite roundedRect = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/LeftSidebar/rounded_rect_white.png");
+            Sprite closeX = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/LeftSidebar/btn_close_x.png")
+                ?? AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/UI/LeftSidebar/circle_white.png");
+
+            TMP_FontAsset jotiSdf = LoadTmpFont(
+                "Assets/_Project/Art/Fonts/Joti_One/JotiOne-Regular SDF.asset",
+                "Assets/Fonts/Joti_One/JotiOne-Regular SDF.asset");
+            TMP_FontAsset markoSdf = LoadTmpFont(
+                "Assets/Fonts/MarkoOne/MarkoOne-Regular SDF.asset",
+                "Assets/_Project/Art/Fonts/Marko_One/MarkoOne-Regular SDF.asset");
+            TMP_FontAsset juaSdf = LoadTmpFont(
+                "Assets/Fonts/Jua/Jua-Regular SDF.asset",
+                "Assets/_Project/Art/Fonts/Jua/Jua-Regular SDF.asset") ?? jotiSdf;
+
+            Material slotTextMat = EnsureSlotTextMaterial(markoSdf);
+            Material glossaryDefaultMat = EnsureTmpOutlineMaterial(jotiSdf, GlossaryDefaultMaterialPath, Hex("#2D2C5B"), Color.clear, 0f);
+            Material glossarySelectedMat = EnsureTmpOutlineMaterial(jotiSdf, GlossarySelectedMaterialPath, Hex("#2D2C5B"), Hex("#FFEFDD"), 0.22f);
+
+            EncyclopediaBookUI bookUi = BuildEncyclopediaBook(
+                canvasRt,
+                roundedRect,
+                closeX,
+                jotiSdf,
+                markoSdf,
+                juaSdf,
+                slotTextMat,
+                glossaryDefaultMat,
+                glossarySelectedMat);
+
+            GameModeController gm = Object.FindAnyObjectByType<GameModeController>(FindObjectsInactive.Include);
+            if (gm != null)
+            {
+                var so = new SerializedObject(gm);
+                so.FindProperty("encyclopediaBook").objectReferenceValue = bookUi;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(gm);
+            }
+
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(scene);
+            UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
+            AssetDatabase.SaveAssets();
         }
 
         private static LeftUpRefs BuildLeftUpSidebar(RectTransform safeArea, Sprite circleSprite)
@@ -600,7 +661,8 @@ namespace ARKimia.EditorTools
             RectTransform safeArea,
             Sprite circleSprite,
             Sprite roundedRect,
-            TMP_FontAsset jotiSdf)
+            TMP_FontAsset jotiSdf,
+            TMP_FontAsset juaSdf)
         {
             Sprite bgCamera = AssetDatabase.LoadAssetAtPath<Sprite>($"{ScreenshotSpritesFolder}/BG_Camera.png");
             Sprite bgBack = AssetDatabase.LoadAssetAtPath<Sprite>($"{ScreenshotSpritesFolder}/Bg_back.png");
@@ -610,19 +672,28 @@ namespace ARKimia.EditorTools
             RectTransform panelRt = CreateRect("CameraScreenshotPanel", safeArea);
             StretchFull(panelRt, 0f);
 
-            var bgImg = panelRt.gameObject.AddComponent<Image>();
+            var panelBackdrop = panelRt.gameObject.AddComponent<Image>();
+            panelBackdrop.color = Hex("#2D2C5B");
+            panelBackdrop.raycastTarget = true;
+
+            RectTransform stageRt = CreateRect("ScreenshotStage", panelRt);
+            stageRt.anchorMin = new Vector2(0.5f, 0.5f);
+            stageRt.anchorMax = new Vector2(0.5f, 0.5f);
+            stageRt.pivot = new Vector2(0.5f, 0.5f);
+            stageRt.anchoredPosition = Vector2.zero;
+            stageRt.sizeDelta = new Vector2(1920f, 1080f);
+
+            RectTransform bgRt = CreateRect("BG_Camera", stageRt);
+            StretchFull(bgRt, 0f);
+            var bgImg = bgRt.gameObject.AddComponent<Image>();
             bgImg.sprite = bgCamera;
             bgImg.color = Color.white;
-            bgImg.raycastTarget = true;
+            bgImg.raycastTarget = false;
 
-            RectTransform frameRt = CreateRect("ScreenshotFrame", panelRt);
-            frameRt.anchorMin = new Vector2(0.5f, 0.5f);
-            frameRt.anchorMax = new Vector2(0.5f, 0.5f);
-            frameRt.pivot = new Vector2(0.5f, 0.5f);
-            frameRt.anchoredPosition = new Vector2(0f, 52f);
-            frameRt.sizeDelta = new Vector2(1040f, 585f);
+            RectTransform frameRt = CreateRectTopLeft("ScreenshotFrame", stageRt, 488.5f, 237f, 1040f, 585f);
             var frameBg = frameRt.gameObject.AddComponent<Image>();
-            frameBg.color = new Color(0f, 0f, 0f, 0.25f);
+            frameBg.color = Color.black;
+            frameBg.raycastTarget = false;
 
             RectTransform previewRt = CreateRect("ScreenshotPreview", frameRt);
             StretchFull(previewRt, 0f);
@@ -630,56 +701,68 @@ namespace ARKimia.EditorTools
             var aspectFitter = previewRt.gameObject.AddComponent<AspectRatioFitter>();
             aspectFitter.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
 
-            Button shareBtn = CreateActionCircleButton("ButtonShare", panelRt, circleSprite, iconShare, new Vector2(-175f, 96f));
-            Button downloadBtn = CreateActionCircleButton("ButtonDownload", panelRt, circleSprite, iconDownload, new Vector2(-40f, 96f));
+            Button shareBtn = CreateActionCircleButtonTopLeft("ButtonShare", stageRt, circleSprite, iconShare, 1174f, 926f, 110f);
+            Button downloadBtn = CreateActionCircleButtonTopLeft("ButtonDownload", stageRt, circleSprite, iconDownload, 1336f, 926f, 110f);
 
-            RectTransform backBtnRt = CreateRect("ButtonBack", panelRt);
-            backBtnRt.anchorMin = new Vector2(1f, 0f);
-            backBtnRt.anchorMax = new Vector2(1f, 0f);
-            backBtnRt.pivot = new Vector2(1f, 0.5f);
-            backBtnRt.anchoredPosition = new Vector2(-64f, 96f);
-            backBtnRt.sizeDelta = new Vector2(220f, 68f);
+            RectTransform backBtnRt = CreateRectTopLeft("ButtonBack", stageRt, 1510f, 940f, 365f, 84f);
             var backImg = backBtnRt.gameObject.AddComponent<Image>();
             backImg.sprite = bgBack != null ? bgBack : roundedRect;
             backImg.color = Color.white;
             var backBtn = backBtnRt.gameObject.AddComponent<Button>();
             backBtn.targetGraphic = backImg;
 
-            TextMeshProUGUI backTxt = CreateTmpText("Label", backBtnRt, jotiSdf, "Kembali", 30f, Color.white, TextAlignmentOptions.Center);
+            TextMeshProUGUI backTxt = CreateTmpText("Label", backBtnRt, jotiSdf, "Kembali", 54f, Hex("#FFEFDD"), TextAlignmentOptions.Center);
             StretchFull(backTxt.rectTransform, 6f);
 
-            var controller = panelRt.gameObject.AddComponent<ARScreenshotController>();
+            RectTransform saveToastRt = CreateRect("SaveScreenshotToast", panelRt);
+            saveToastRt.anchorMin = new Vector2(0.5f, 1f);
+            saveToastRt.anchorMax = new Vector2(0.5f, 1f);
+            saveToastRt.pivot = new Vector2(0.5f, 1f);
+            saveToastRt.anchoredPosition = new Vector2(0f, -28f);
+            saveToastRt.sizeDelta = new Vector2(580f, 64f);
+            var saveToastBg = saveToastRt.gameObject.AddComponent<Image>();
+            saveToastBg.sprite = roundedRect;
+            saveToastBg.type = Image.Type.Sliced;
+            saveToastBg.color = new Color32(75, 73, 139, 245);
+            saveToastBg.raycastTarget = false;
+
+            TextMeshProUGUI saveToastTxt = CreateTmpText("ToastText", saveToastRt, juaSdf, "Screenshot berhasil disimpan ke galeri!", 28f, Hex("#FFEFDD"), TextAlignmentOptions.Center);
+            StretchFull(saveToastTxt.rectTransform, 10f);
+            saveToastRt.gameObject.SetActive(false);
+
+            RectTransform hostRt = CreateRect("ARScreenshotHost", safeArea);
+            var controller = hostRt.gameObject.AddComponent<ARScreenshotController>();
             panelRt.gameObject.SetActive(false);
 
             return new CameraPanelRefs
             {
                 panelRoot = panelRt.gameObject,
+                stage = stageRt,
                 preview = rawImg,
                 aspectFitter = aspectFitter,
                 shareButton = shareBtn,
                 downloadButton = downloadBtn,
                 backButton = backBtn,
+                saveToastRoot = saveToastRt.gameObject,
+                saveToastText = saveToastTxt,
                 controller = controller
             };
         }
 
-        private static Button CreateActionCircleButton(
+        private static Button CreateActionCircleButtonTopLeft(
             string name,
             RectTransform parent,
             Sprite circleSprite,
             Sprite iconSprite,
-            Vector2 bottomCenterOffset)
+            float figmaX,
+            float figmaY,
+            float size)
         {
-            RectTransform rt = CreateRect(name, parent);
-            rt.anchorMin = new Vector2(0.5f, 0f);
-            rt.anchorMax = new Vector2(0.5f, 0f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = bottomCenterOffset;
-            rt.sizeDelta = new Vector2(110f, 110f);
+            RectTransform rt = CreateRectTopLeft(name, parent, figmaX, figmaY, size, size);
 
             var outerImg = rt.gameObject.AddComponent<Image>();
             outerImg.sprite = circleSprite;
-            outerImg.color = Hex("#494B8A");
+            outerImg.color = Hex("#4B498B");
             var btn = rt.gameObject.AddComponent<Button>();
             btn.targetGraphic = outerImg;
 
@@ -691,7 +774,7 @@ namespace ARKimia.EditorTools
             innerImg.raycastTarget = false;
 
             RectTransform iconRt = CreateRect("Icon", innerRt);
-            StretchFull(iconRt, 18f);
+            StretchFull(iconRt, 15f);
             var iconImg = iconRt.gameObject.AddComponent<Image>();
             iconImg.sprite = iconSprite;
             iconImg.color = Color.white;
@@ -805,7 +888,10 @@ namespace ARKimia.EditorTools
                 extraHuds.ToArray(),
                 camRefs.panelRoot,
                 camRefs.preview,
-                camRefs.aspectFitter);
+                camRefs.aspectFitter,
+                camRefs.stage,
+                camRefs.saveToastRoot,
+                camRefs.saveToastText);
 
             UnityEventTools.AddPersistentListener(leftUp.cameraButton.onClick, camRefs.controller.TakeScreenshot);
             UnityEventTools.AddPersistentListener(camRefs.shareButton.onClick, camRefs.controller.ShareScreenshot);
@@ -1015,11 +1101,14 @@ namespace ARKimia.EditorTools
         private struct CameraPanelRefs
         {
             public GameObject panelRoot;
+            public RectTransform stage;
             public RawImage preview;
             public AspectRatioFitter aspectFitter;
             public Button shareButton;
             public Button downloadButton;
             public Button backButton;
+            public GameObject saveToastRoot;
+            public TMP_Text saveToastText;
             public ARScreenshotController controller;
         }
 

@@ -343,6 +343,7 @@ namespace ARKimia.UI
 
         public void RefreshIndexSlotStates()
         {
+            EnsureDatabaseLoaded();
             TryBindManager();
             if (selectedSlot != null && !IsSlotUnlocked(selectedSlot))
                 selectedSlot = null;
@@ -648,13 +649,47 @@ namespace ARKimia.UI
 
         private bool IsSlotUnlocked(EncyclopediaBookSlotUI slot)
         {
-            if (slot == null || boundManager == null)
+            if (slot == null)
                 return false;
 
-            if (slot.Kind == EncyclopediaBookSlotUI.SlotKind.Element)
-                return boundManager.IsElementDiscovered(slot.Element);
+            if (boundManager != null)
+            {
+                if (slot.Kind == EncyclopediaBookSlotUI.SlotKind.Element)
+                    return boundManager.IsElementDiscovered(slot.Element);
 
-            return boundManager.IsCompoundDiscovered(slot.Compound);
+                return boundManager.IsCompoundDiscovered(slot.Compound);
+            }
+
+            if (slot.Kind == EncyclopediaBookSlotUI.SlotKind.Element && slot.Element != null)
+            {
+                List<string> saved = ProgressSaveManager.GetDiscoveredElements();
+                for (int i = 0; i < saved.Count; i++)
+                {
+                    string key = saved[i];
+                    if (string.Equals(key, slot.Element.Symbol, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(key, slot.Element.ElementId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            if (slot.Kind == EncyclopediaBookSlotUI.SlotKind.Compound && slot.Compound != null)
+            {
+                List<string> saved = ProgressSaveManager.GetDiscoveredCompounds();
+                for (int i = 0; i < saved.Count; i++)
+                {
+                    string key = saved[i];
+                    if (string.Equals(key, slot.Compound.ChemicalFormula, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(key, slot.Compound.CompoundId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private EncyclopediaBookSlotUI FindSlotByElement(ElementSO element)
