@@ -94,11 +94,36 @@ public class DropVisualSpawner : MonoBehaviour
         go.transform.position = c.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, distance));
         go.transform.rotation = c.transform.rotation;
 
+        EnsureDraggable(go, c);
+
         spawned.Add(go);
         while (spawned.Count > maxVisuals)
         {
             if (spawned[0]) Destroy(spawned[0]);
             spawned.RemoveAt(0);
+        }
+    }
+
+    void EnsureDraggable(GameObject go, Camera c)
+    {
+        if (go == null) return;
+
+        Renderer[] renderers = go.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            renderers[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderers[i].receiveShadows = false;
+        }
+
+        if (go.GetComponent<Collider>() == null && go.GetComponentInChildren<Collider>() == null)
+        {
+            var col = go.AddComponent<SphereCollider>();
+            col.radius = Mathf.Max(0.03f, atomSize);
+        }
+
+        if (go.GetComponent<ARDraggable3D>() == null)
+        {
+            go.AddComponent<ARDraggable3D>();
         }
     }
 

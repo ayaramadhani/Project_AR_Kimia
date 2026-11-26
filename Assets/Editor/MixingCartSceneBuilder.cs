@@ -840,10 +840,22 @@ namespace ARKimia.EditorTools
             sidebarCollapse.closedTopInset = 24f;
             sidebarCollapse.topInset = 12f;
             sidebarCollapse.startCollapsed = false;
+
+            var dropZone = sidebarRt.gameObject.AddComponent<ARDropZone>();
+            var dzSo = new SerializedObject(dropZone);
+            dzSo.FindProperty("zoneRect").objectReferenceValue = sidebarRt;
+            dzSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void EnsureDropVisualSpawner()
         {
+            Camera cam = Camera.main != null ? Camera.main : Object.FindAnyObjectByType<Camera>();
+            if (cam != null && cam.GetComponent<PhysicsRaycaster>() == null)
+            {
+                cam.gameObject.AddComponent<PhysicsRaycaster>();
+                EditorUtility.SetDirty(cam.gameObject);
+            }
+
             DropVisualSpawner existing = Object.FindAnyObjectByType<DropVisualSpawner>();
             if (existing != null)
                 return;
@@ -851,7 +863,7 @@ namespace ARKimia.EditorTools
             ElementCombinationManager mgr = Object.FindAnyObjectByType<ElementCombinationManager>();
             GameObject host = mgr != null ? mgr.gameObject : new GameObject("QuickdropVisualSpawner");
             var spawner = host.AddComponent<DropVisualSpawner>();
-            spawner.cam = Camera.main;
+            spawner.cam = cam;
         }
 
         private static TextMeshProUGUI CreateTmpText(

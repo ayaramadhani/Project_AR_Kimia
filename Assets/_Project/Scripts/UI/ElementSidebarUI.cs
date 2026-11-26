@@ -107,6 +107,7 @@ public class ElementSidebarUI : MonoBehaviour
         boundManager.OnCompoundDiscovered += HandleCompoundDiscovered;
         boundManager.OnCombinationSuccess += HandleCompoundDiscovered;
         boundManager.OnUnreadStateChanged += RefreshUnreadBadges;
+        boundManager.OnProgressReloaded += Refresh;
     }
 
     void UnbindManager()
@@ -118,6 +119,7 @@ public class ElementSidebarUI : MonoBehaviour
         boundManager.OnCompoundDiscovered -= HandleCompoundDiscovered;
         boundManager.OnCombinationSuccess -= HandleCompoundDiscovered;
         boundManager.OnUnreadStateChanged -= RefreshUnreadBadges;
+        boundManager.OnProgressReloaded -= Refresh;
         boundManager = null;
     }
 

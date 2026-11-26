@@ -51,6 +51,7 @@ namespace ARKimia.Gameplay
         public event Action OnCombinationFailed;
         public event Action OnCartReset;
         public event Action<bool> OnReactionLockChanged;
+        public event Action OnProgressReloaded;
 
         public ChemistryDatabase Database => database;
         public IReadOnlyDictionary<ElementSO, int> ActiveElements => activeElements;
@@ -92,6 +93,8 @@ namespace ARKimia.Gameplay
             {
                 database = Resources.Load<ChemistryDatabase>("ChemistryData/ChemistryDatabase");
             }
+
+            LoadProgressFromSave();
         }
 
         private void OnDestroy()
@@ -1128,6 +1131,7 @@ namespace ARKimia.Gameplay
             {
                 discoveredElementOrder.Add(element);
                 unreadElements.Add(element);
+                ProgressSaveManager.MarkElementDiscovered(element.Symbol);
                 OnElementDiscovered?.Invoke(element);
                 OnUnreadStateChanged?.Invoke();
             }
@@ -1139,9 +1143,68 @@ namespace ARKimia.Gameplay
             {
                 discoveredCompoundOrder.Add(compound);
                 unreadCompounds.Add(compound);
+                ProgressSaveManager.MarkCompoundDiscovered(compound.ChemicalFormula);
                 OnCompoundDiscovered?.Invoke(compound);
                 OnUnreadStateChanged?.Invoke();
             }
+        }
+
+        public void ReloadProgressFromSave()
+        {
+            LoadProgressFromSave();
+            OnUnreadStateChanged?.Invoke();
+            OnProgressReloaded?.Invoke();
+        }
+
+        private void LoadProgressFromSave()
+        {
+            discoveredElements.Clear();
+            discoveredElementOrder.Clear();
+            discoveredCompounds.Clear();
+            discoveredCompoundOrder.Clear();
+            unreadElements.Clear();
+            unreadCompounds.Clear();
+
+            if (database == null)
+                return;
+
+            List<string> savedElements = ProgressSaveManager.GetDiscoveredElements();
+            for (int i = 0; i < savedElements.Count; i++)
+            {
+                string key = savedElements[i];
+                ElementSO elem = database.GetElementBySymbol(key) ?? database.GetElementById(key);
+                if (elem != null && discoveredElements.Add(elem))
+                {
+                    discoveredElementOrder.Add(elem);
+                }
+            }
+
+            List<string> savedCompounds = ProgressSaveManager.GetDiscoveredCompounds();
+            for (int i = 0; i < savedCompounds.Count; i++)
+            {
+                string key = savedCompounds[i];
+                CompoundSO comp = database.GetCompoundByFormula(key) ?? FindCompoundById(key);
+                if (comp != null && discoveredCompounds.Add(comp))
+                {
+                    discoveredCompoundOrder.Add(comp);
+                }
+            }
+        }
+
+        private CompoundSO FindCompoundById(string compoundId)
+        {
+            if (database == null || string.IsNullOrEmpty(compoundId))
+                return null;
+
+            IReadOnlyList<CompoundSO> compounds = database.Compounds;
+            for (int i = 0; i < compounds.Count; i++)
+            {
+                CompoundSO comp = compounds[i];
+                if (comp != null && string.Equals(comp.CompoundId, compoundId, StringComparison.Ordinal))
+                    return comp;
+            }
+
+            return null;
         }
 
         private void SetReactionLockedInternal(bool locked)

@@ -17,6 +17,8 @@ namespace ARKimia.Tracking
         [Tooltip("Keep false for tabletop card scanning so removing a card from camera view marks it lost.")]
         [SerializeField] private bool allowExtendedTracking = false;
         [SerializeField] private float lostDebounceSeconds = 0.5f;
+        [Tooltip("Grace period before hiding visual on brief tracking dropouts to prevent multi-marker flickering.")]
+        [SerializeField] private float visualLostGraceSeconds = 0.35f;
 
         [Header("Visual Spawning")]
         [SerializeField] private bool spawnPlaceholderIfNoPrefab = true;
@@ -26,6 +28,7 @@ namespace ARKimia.Tracking
         private ObserverBehaviour observer;
         private GameObject visualRoot;
         private Coroutine lostDebounceCoroutine;
+        private Coroutine visualLostCoroutine;
 
         public static event Action<ElementTargetHandler> OnTargetDetected;
         public static event Action<ElementTargetHandler> OnTargetLost;
@@ -43,6 +46,8 @@ namespace ARKimia.Tracking
             OnTargetDetected = null;
             OnTargetLost = null;
         }
+
+        public float VisualLostGraceSeconds => visualLostGraceSeconds;
 
         private void Awake()
         {
@@ -68,6 +73,7 @@ namespace ARKimia.Tracking
             }
 
             CancelLostDebounce();
+            CancelVisualLostGrace();
 
             if (IsTracked)
             {
@@ -75,6 +81,10 @@ namespace ARKimia.Tracking
                 CurrentStatus = Status.NO_POSE;
                 RefreshVisualVisibility();
                 OnTargetLost?.Invoke(this);
+            }
+            else
+            {
+                RefreshVisualVisibility();
             }
         }
 
@@ -109,9 +119,11 @@ namespace ARKimia.Tracking
             if (rawTracked)
             {
                 CancelLostDebounce();
+                CancelVisualLostGrace();
                 if (!IsTracked)
                 {
                     IsTracked = true;
+                    ResetVisualDragPosition();
                     RefreshVisualVisibility();
                     OnTargetDetected?.Invoke(this);
                 }
@@ -125,10 +137,19 @@ namespace ARKimia.Tracking
             if (!IsTracked)
                 return;
 
-            // Hide visual while pose is missing, but debounce logical tracking loss against brief camera jitter.
-            if (visualRoot != null && visualRoot.activeSelf)
+            // Wait a brief grace period before hiding visual so single-frame tracking jitter does not flicker the atom.
+            float grace = lostDebounceSeconds > 0f
+                ? Mathf.Min(visualLostGraceSeconds, lostDebounceSeconds)
+                : visualLostGraceSeconds;
+
+            if (grace <= 0f || !isActiveAndEnabled)
             {
-                visualRoot.SetActive(false);
+                CancelVisualLostGrace();
+                RefreshVisualVisibility();
+            }
+            else if (visualLostCoroutine == null)
+            {
+                visualLostCoroutine = StartCoroutine(VisualLostGraceRoutine(grace));
             }
 
             if (lostDebounceSeconds <= 0f || !isActiveAndEnabled)
@@ -139,6 +160,19 @@ namespace ARKimia.Tracking
             {
                 lostDebounceCoroutine = StartCoroutine(LostDebounceRoutine());
             }
+        }
+
+        private IEnumerator VisualLostGraceRoutine(float graceSeconds)
+        {
+            float elapsed = 0f;
+            while (elapsed < graceSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            visualLostCoroutine = null;
+            RefreshVisualVisibility();
         }
 
         private IEnumerator LostDebounceRoutine()
@@ -156,6 +190,7 @@ namespace ARKimia.Tracking
 
         private void CompleteTargetLost()
         {
+            CancelVisualLostGrace();
             if (!IsTracked)
                 return;
 
@@ -173,6 +208,27 @@ namespace ARKimia.Tracking
             }
         }
 
+        private void CancelVisualLostGrace()
+        {
+            if (visualLostCoroutine != null)
+            {
+                StopCoroutine(visualLostCoroutine);
+                visualLostCoroutine = null;
+            }
+        }
+
+        private void ResetVisualDragPosition()
+        {
+            if (visualRoot == null)
+                return;
+
+            var draggables = visualRoot.GetComponentsInChildren<ARDraggable3D>(true);
+            for (int i = 0; i < draggables.Length; i++)
+            {
+                draggables[i].ResetToInitialLocalPosition();
+            }
+        }
+
         private bool IsStatusConsideredTracked(Status status)
         {
             if (status == Status.TRACKED)
@@ -186,7 +242,10 @@ namespace ARKimia.Tracking
 
         private void RefreshVisualVisibility()
         {
-            bool shouldShow = IsTracked && !IsVisualSuppressed && (observer == null || IsStatusConsideredTracked(CurrentStatus));
+            bool trackedOrInGrace = observer == null
+                || IsStatusConsideredTracked(CurrentStatus)
+                || visualLostCoroutine != null;
+            bool shouldShow = IsTracked && !IsVisualSuppressed && trackedOrInGrace;
             if (visualRoot != null && visualRoot.activeSelf != shouldShow)
             {
                 visualRoot.SetActive(shouldShow);
@@ -217,6 +276,7 @@ namespace ARKimia.Tracking
                 instance.name = $"BohrModel_{data.Symbol}";
                 instance.transform.localPosition = localOffset;
                 instance.transform.localRotation = Quaternion.identity;
+                DisableShadows(instance);
                 return instance;
             }
 
@@ -296,7 +356,21 @@ namespace ARKimia.Tracking
             textMesh.alignment = TextAlignment.Center;
             textMesh.color = Color.white;
 
+            DisableShadows(root);
             return root;
+        }
+
+        private static void DisableShadows(GameObject root)
+        {
+            if (root == null)
+                return;
+
+            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                renderers[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderers[i].receiveShadows = false;
+            }
         }
 
         public static void StripCollider(GameObject obj)

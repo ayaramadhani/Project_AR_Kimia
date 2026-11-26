@@ -23,6 +23,28 @@ namespace ARKimia.EditorTools
         [MenuItem("AR Kimia/Verify Mixing Cart Mechanics (Si A)")]
         public static void VerifyMechanicsInMemory()
         {
+            const string progressPrefsKey = "AR_KIMIA_PROGRESS_V1";
+            bool hadSavedProgress = PlayerPrefs.HasKey(progressPrefsKey);
+            string previousProgressJson = hadSavedProgress ? PlayerPrefs.GetString(progressPrefsKey, string.Empty) : string.Empty;
+            ProgressSaveManager.ResetAllProgress();
+
+            try
+            {
+                VerifyMechanicsInMemoryCore();
+            }
+            finally
+            {
+                ProgressSaveManager.ResetAllProgress();
+                if (hadSavedProgress)
+                {
+                    PlayerPrefs.SetString(progressPrefsKey, previousProgressJson);
+                    PlayerPrefs.Save();
+                }
+            }
+        }
+
+        private static void VerifyMechanicsInMemoryCore()
+        {
             ElementCombinationManager manager = UnityEngine.Object.FindAnyObjectByType<ElementCombinationManager>();
             MixingCartUI ui = UnityEngine.Object.FindAnyObjectByType<MixingCartUI>();
 
@@ -506,8 +528,9 @@ namespace ARKimia.EditorTools
                         $"Case 16b failed: Prefab root {instance.name} must not have AtomAnimator.");
                     Assert(instance.transform.localScale == Vector3.one,
                         $"Case 16b failed: Prefab root {instance.name} localScale must be Vector3.one.");
-                    Assert(instance.GetComponentsInChildren<Collider>(true).Length == 0,
-                        $"Case 16b failed: Prefab {instance.name} must have zero colliders.");
+                    Collider[] cols = instance.GetComponentsInChildren<Collider>(true);
+                    Assert(cols.Length == 1 && cols[0].gameObject == instance && instance.GetComponent<ARDraggable3D>() != null,
+                        $"Case 16b failed: Prefab {instance.name} must have single root drag Collider + ARDraggable3D.");
 
                     Transform nucleus = instance.transform.Find($"{elem.Symbol}_Inti_Atom");
                     Assert(nucleus != null, $"Case 16c failed: {elem.Symbol}_Inti_Atom missing under root.");
@@ -571,6 +594,8 @@ namespace ARKimia.EditorTools
                     Assert(renderers.Length >= 2, $"Case 16h failed: Expected >= 2 MeshRenderers on {elem.Symbol}.");
                     for (int r = 0; r < renderers.Length; r++)
                     {
+                        Assert(renderers[r].shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.Off && !renderers[r].receiveShadows,
+                            $"Case 16h failed: Shadows must be disabled on {elem.Symbol}/{renderers[r].name} to avoid AR shadow strobing.");
                         Material[] mats = renderers[r].sharedMaterials;
                         for (int m = 0; m < mats.Length; m++)
                         {
@@ -584,6 +609,38 @@ namespace ARKimia.EditorTools
                     UnityEngine.Object.DestroyImmediate(instance);
                 }
             }
+
+            // 17. PhysicsRaycaster, ARDropZone, VisualLostGrace, Toast senyawa, ProgressSaveManager round-trip & Reset
+            Camera mainCam = Camera.main != null ? Camera.main : UnityEngine.Object.FindAnyObjectByType<Camera>();
+            Assert(mainCam != null && mainCam.GetComponent<UnityEngine.EventSystems.PhysicsRaycaster>() != null,
+                "Case 17a failed: ARCamera must have PhysicsRaycaster for ARDraggable3D.");
+            Assert(safeArea.GetComponentInChildren<ARDropZone>(true) != null,
+                "Case 17a failed: ElementSidebar must have ARDropZone component.");
+            Assert(UnityEngine.Object.FindAnyObjectByType<EncyclopediaPopup>(UnityEngine.FindObjectsInactive.Include) == null,
+                "Case 17a failed: Duplicate EncyclopediaPopup must not exist in ARScene.");
+            Assert(handlerH.VisualLostGraceSeconds > 0f,
+                "Case 17b failed: ElementTargetHandler visualLostGraceSeconds must be > 0 to avoid multi-marker flickering.");
+
+            Light dirLight = UnityEngine.Object.FindAnyObjectByType<Light>();
+            Assert(dirLight != null && dirLight.shadows == LightShadows.None,
+                "Case 17b failed: Directional Light in ARScene must use LightShadows.None to prevent shadow-map flicker on cm-scale AR atoms.");
+
+            Assert(ui.ToastRoot != null && ui.ToastRoot.activeSelf && ui.ToastText.text.Contains("Senyawa Baru"),
+                $"Case 17c failed: Compound discovery must show compound toast, got active={ui.ToastRoot?.activeSelf} text='{ui.ToastText?.text}'.");
+
+            var savedElems = ProgressSaveManager.GetDiscoveredElements();
+            var savedComps = ProgressSaveManager.GetDiscoveredCompounds();
+            Assert(savedElems.Contains("H") && savedElems.Contains("O") && savedComps.Contains("H2O"),
+                "Case 17d failed: Discovered H, O, and H2O must persist in ProgressSaveManager.");
+
+            manager.ReloadProgressFromSave();
+            Assert(manager.DiscoveredElementOrder.Count == savedElems.Count && manager.DiscoveredCompoundOrder.Count == savedComps.Count,
+                "Case 17d failed: ReloadProgressFromSave must restore persisted progress.");
+
+            ProgressSaveManager.ResetAllProgress();
+            manager.ReloadProgressFromSave();
+            Assert(manager.DiscoveredElementOrder.Count == 0 && manager.DiscoveredCompoundOrder.Count == 0,
+                "Case 17e failed: ResetAllProgress + ReloadProgressFromSave must clear progress back to empty.");
         }
 
         private static void Assert(bool condition, string message)

@@ -214,6 +214,7 @@ namespace ARKimia.UI
             boundManager = target;
             boundManager.OnElementQuantityChanged += HandleElementQuantityChanged;
             boundManager.OnElementDiscovered += HandleElementDiscovered;
+            boundManager.OnCompoundDiscovered += HandleCompoundDiscovered;
             boundManager.OnCombinationSuccess += HandleCombinationSuccess;
             boundManager.OnCartReset += HandleCartReset;
             boundManager.OnReactionLockChanged += HandleReactionLockChanged;
@@ -226,6 +227,7 @@ namespace ARKimia.UI
 
             boundManager.OnElementQuantityChanged -= HandleElementQuantityChanged;
             boundManager.OnElementDiscovered -= HandleElementDiscovered;
+            boundManager.OnCompoundDiscovered -= HandleCompoundDiscovered;
             boundManager.OnCombinationSuccess -= HandleCombinationSuccess;
             boundManager.OnCartReset -= HandleCartReset;
             boundManager.OnReactionLockChanged -= HandleReactionLockChanged;
@@ -251,6 +253,17 @@ namespace ARKimia.UI
                 toastText.text = $"✨ {currentToastBatch.Count} Unsur Baru Ditemukan!";
             }
 
+            toastTimer = toastDuration;
+            toastRoot.SetActive(true);
+        }
+
+        private void HandleCompoundDiscovered(CompoundSO compound)
+        {
+            if (compound == null || toastRoot == null || toastText == null)
+                return;
+
+            currentToastBatch.Clear();
+            toastText.text = $"✨ Senyawa Baru: {compound.CompoundName} ({compound.ChemicalFormula})";
             toastTimer = toastDuration;
             toastRoot.SetActive(true);
         }

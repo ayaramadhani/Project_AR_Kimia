@@ -154,7 +154,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -359,6 +359,7 @@ MonoBehaviour:
   elementData: {fileID: 11400000, guid: 64c0b318be4c98443a949a0e344a1dcc, type: 2}
   allowExtendedTracking: 0
   lostDebounceSeconds: 0.5
+  visualLostGraceSeconds: 0.35
   spawnPlaceholderIfNoPrefab: 1
   modelLocalOffset: {x: 0, y: 0.045, z: 0}
   placeholderBaseMaterial: {fileID: 2100000, guid: f6cbc0045eca2544699d92af8a9e9bf6, type: 2}
@@ -457,6 +458,7 @@ MonoBehaviour:
   elementData: {fileID: 11400000, guid: 7cf2683f856616c45a106f2cd0f2850b, type: 2}
   allowExtendedTracking: 0
   lostDebounceSeconds: 0.5
+  visualLostGraceSeconds: 0.35
   spawnPlaceholderIfNoPrefab: 1
   modelLocalOffset: {x: 0, y: 0.045, z: 0}
   placeholderBaseMaterial: {fileID: 2100000, guid: f6cbc0045eca2544699d92af8a9e9bf6, type: 2}
@@ -683,6 +685,7 @@ MonoBehaviour:
   elementData: {fileID: 11400000, guid: 415c4befdbbc3534b9b13545f60d3873, type: 2}
   allowExtendedTracking: 0
   lostDebounceSeconds: 0.5
+  visualLostGraceSeconds: 0.35
   spawnPlaceholderIfNoPrefab: 1
   modelLocalOffset: {x: 0, y: 0.045, z: 0}
   placeholderBaseMaterial: {fileID: 2100000, guid: f6cbc0045eca2544699d92af8a9e9bf6, type: 2}
@@ -781,6 +784,7 @@ MonoBehaviour:
   elementData: {fileID: 11400000, guid: 1203d0351e30b3947b4527e5721cc479, type: 2}
   allowExtendedTracking: 0
   lostDebounceSeconds: 0.5
+  visualLostGraceSeconds: 0.35
   spawnPlaceholderIfNoPrefab: 1
   modelLocalOffset: {x: 0, y: 0.045, z: 0}
   placeholderBaseMaterial: {fileID: 2100000, guid: f6cbc0045eca2544699d92af8a9e9bf6, type: 2}
@@ -859,6 +863,7 @@ GameObject:
   - component: {fileID: 2103119580}
   - component: {fileID: 2103119579}
   - component: {fileID: 2103119578}
+  - component: {fileID: 2103119584}
   m_Layer: 0
   m_Name: ARCamera
   m_TagString: MainCamera
@@ -1010,7 +1015,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1001 &1875158125313505562
+--- !u!114 &2103119584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2103119577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c49b4cc203aa6414fae5c798d1d0e7d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.PhysicsRaycaster
+  m_EventMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_MaxRayIntersections: 0
+--- !u!1001 &5942633154620134630
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -1120,4 +1141,4 @@ SceneRoots:
   - {fileID: 454528065}
   - {fileID: 2099225993}
   - {fileID: 430159770}
-  - {fileID: 1875158125313505562}
+  - {fileID: 5942633154620134630}

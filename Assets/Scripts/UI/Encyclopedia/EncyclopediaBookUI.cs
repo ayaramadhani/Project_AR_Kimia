@@ -88,6 +88,14 @@ namespace ARKimia.UI
         private bool glossaryBuilt;
         private bool buttonsWired;
 
+        public static bool OpenOnNextSceneLoad;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticFlags()
+        {
+            OpenOnNextSceneLoad = false;
+        }
+
         public GameObject PanelRoot => panelRoot;
         public BookTab CurrentTab => currentTab;
         public ScrollRect LeftScrollRect => leftScrollRect;
@@ -199,6 +207,11 @@ namespace ARKimia.UI
         private void Start()
         {
             EnsureInitialized();
+            if (OpenOnNextSceneLoad)
+            {
+                OpenOnNextSceneLoad = false;
+                OpenIndex();
+            }
         }
 
         private void OnDisable()
@@ -383,6 +396,7 @@ namespace ARKimia.UI
             boundManager = mgr;
             boundManager.OnElementDiscovered += HandleElementDiscovered;
             boundManager.OnCompoundDiscovered += HandleCompoundDiscovered;
+            boundManager.OnProgressReloaded += RefreshIndexSlotStates;
         }
 
         private void UnbindManager()
@@ -392,6 +406,7 @@ namespace ARKimia.UI
 
             boundManager.OnElementDiscovered -= HandleElementDiscovered;
             boundManager.OnCompoundDiscovered -= HandleCompoundDiscovered;
+            boundManager.OnProgressReloaded -= RefreshIndexSlotStates;
             boundManager = null;
         }
 

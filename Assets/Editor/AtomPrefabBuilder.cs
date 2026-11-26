@@ -98,6 +98,12 @@ namespace ARKimia.EditorTools
                 }
 
                 StripColliders(root);
+                DisableShadows(root);
+
+                var dragCollider = root.AddComponent<SphereCollider>();
+                dragCollider.radius = 0.04f;
+                dragCollider.center = Vector3.zero;
+                root.AddComponent<ARDraggable3D>();
 
                 float maxWorldRadius = ComputeMaxWorldRadius(root);
                 string shaderSummary = CollectShaderSummary(root);
@@ -224,6 +230,16 @@ namespace ARKimia.EditorTools
                 start--;
 
             return int.TryParse(name.Substring(start, end - start + 1), out int n) ? n : int.MaxValue;
+        }
+
+        private static void DisableShadows(GameObject root)
+        {
+            MeshRenderer[] renderers = root.GetComponentsInChildren<MeshRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                renderers[i].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderers[i].receiveShadows = false;
+            }
         }
 
         private static void StripColliders(GameObject root)

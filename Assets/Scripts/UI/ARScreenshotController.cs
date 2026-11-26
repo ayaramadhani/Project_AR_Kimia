@@ -82,9 +82,10 @@ public class ARScreenshotController : MonoBehaviour
         Texture2D newScreenshot =
             ScreenCapture.CaptureScreenshotAsTexture();
 
-        RestoreHudVisibility();
         if (screenshotPanel != null)
             screenshotPanel.SetActive(true);
+        else
+            RestoreHudVisibility();
 
         // Hapus gambar sebelumnya.
         if (currentScreenshot != null)
@@ -163,9 +164,9 @@ public class ARScreenshotController : MonoBehaviour
 
         Debug.Log("Screenshot tersimpan di: " + filePath);
 
-#elif UNITY_ANDROID
+#elif UNITY_ANDROID || UNITY_IOS
 
-        // Simpan ke galeri Android.
+        // Simpan ke galeri Android/iOS.
         NativeGallery.SaveImageToGallery(
             imageBytes,
             "AR_Kimia",
@@ -183,35 +184,42 @@ public class ARScreenshotController : MonoBehaviour
             }
         );
 
+#else
+
+        string folderPath = Path.Combine(Application.persistentDataPath, "Screenshots");
+        if (!Directory.Exists(folderPath))
+            Directory.CreateDirectory(folderPath);
+        string filePath = Path.Combine(folderPath, fileName);
+        File.WriteAllBytes(filePath, imageBytes);
+        Debug.Log("Screenshot tersimpan di: " + filePath);
+
 #endif
     }
 
-public void ShareScreenshot()
-{
-    if (currentScreenshot == null)
+    public void ShareScreenshot()
     {
-        Debug.LogWarning("Belum ada screenshot untuk dibagikan.");
-        return;
+        if (currentScreenshot == null)
+        {
+            Debug.LogWarning("Belum ada screenshot untuk dibagikan.");
+            return;
+        }
+
+        byte[] imageBytes = currentScreenshot.EncodeToPNG();
+        string fileName = "AR_Kimia_" +
+            DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
+        string filePath = Path.Combine(
+            Application.temporaryCachePath,
+            fileName
+        );
+
+        File.WriteAllBytes(filePath, imageBytes);
+
+        new NativeShare()
+            .AddFile(filePath)
+            .SetSubject("Screenshot AR Kimia")
+            .SetText("Lihat hasil eksplorasi AR Kimia saya!")
+            .Share();
     }
-
-    byte[] imageBytes = currentScreenshot.EncodeToPNG();
-
-    string fileName = "AR_Kimia_" +
-        DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
-
-    string filePath = Path.Combine(
-        Application.temporaryCachePath,
-        fileName
-    );
-
-    File.WriteAllBytes(filePath, imageBytes);
-
-    new NativeShare()
-        .AddFile(filePath)
-        .SetSubject("Screenshot AR Kimia")
-        .SetText("Lihat hasil eksplorasi AR Kimia saya!")
-        .Share();
-}
 
     // =====================================
     // 3. MEMBERSIHKAN MEMORI
@@ -219,23 +227,26 @@ public void ShareScreenshot()
 
     private void OnDestroy()
     {
+        RestoreHudVisibility();
+
+        if (screenshotPreview != null)
+            screenshotPreview.texture = null;
+
         if (currentScreenshot != null)
         {
             Destroy(currentScreenshot);
+            currentScreenshot = null;
         }
     }
 
-public void CloseScreenshotPanel()
-{
-    // Menutup halaman screenshot
-    if (screenshotPanel != null)
-        screenshotPanel.SetActive(false);
+    public void CloseScreenshotPanel()
+    {
+        if (screenshotPanel != null)
+            screenshotPanel.SetActive(false);
 
-    // Menampilkan kembali sidebar AR bila sebelumnya disembunyikan
-    if (leftSidebar != null)
-        leftSidebar.SetActive(true);
+        RestoreHudVisibility();
 
-    Debug.Log("Kembali ke halaman AR Camera.");
-}
+        Debug.Log("Kembali ke halaman AR Camera.");
+    }
 
 }
